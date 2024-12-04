@@ -27,7 +27,7 @@ export class UserService extends BaseService<User, CreateUserDto, UpdateUserDto,
 		if (user) {
 			throw new BadRequestException('Username is already used.');
 		}
-		dto.password = await bcrypt.hash(dto.password, this.configService.get<string>('PASSWORD_SALT', ''));
+		dto.password = await bcrypt.hash(dto.password, parseInt(this.configService.get<string>('PASSWORD_SALT', '10')));
 		return dto;
 	}
 
@@ -43,7 +43,7 @@ export class UserService extends BaseService<User, CreateUserDto, UpdateUserDto,
 			}
 		}
 		if (dto.password) {
-			dto.password = await bcrypt.hash(dto.password, this.configService.get<string>('PASSWORD_SALT', ''));
+			dto.password = await bcrypt.hash(dto.password, parseInt(this.configService.get<string>('PASSWORD_SALT', '10')));
 		}
 		return dto;
 	}

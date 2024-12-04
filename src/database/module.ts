@@ -1,9 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { PrivilegeGroup } from './privileges/group.entity';
-import { ParameterizedPrivilege } from './privileges/parameterized.entity';
 import { Privilege } from './privileges/privilege.entity';
-import { SimplePrivilege } from './privileges/simple.entity';
 import { ConfigService } from '@nestjs/config';
 import { User } from './users/user.entity';
 import { UserType } from './users/user-type.entity';
@@ -42,8 +39,7 @@ import { DeviceApplications } from './devices/devices_applications.entity';
 				autoLoadEntities: true,
 			}),
 		}),
-		TypeOrmModule.forFeature([User, UserType, PrivilegeGroup, Privilege,
-			SimplePrivilege, ParameterizedPrivilege, Student, Course, Matetial,
+		TypeOrmModule.forFeature([User, UserType, Privilege, Student, Course, Matetial,
 			Lab, Application, Student_courses, Event, Student_courses_degree,
 			Event_schedule, Student_event_attendance, Students_files,
 			Labs_sesstions, Lab_session_attentance, Courses_labs, DeviceReport,

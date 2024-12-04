@@ -27,6 +27,8 @@ async function bootstrap() {
 		.setTitle('ASU Science Management')
 		.setDescription('API description for the management system')
 		.setVersion('1.0')
+		.addBearerAuth()
+		.addSecurityRequirements('bearer')
 		.addTag('asu-sci-management')
 		.build();
 	const documentFactory = () => SwaggerModule.createDocument(app, config);

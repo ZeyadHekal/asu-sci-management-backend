@@ -6,7 +6,7 @@ export class RefreshRequsetDto {
 	@ApiProperty()
 	@IsJWT()
 	@Expose()
-	refereshToken: string;
+	refreshToken: string;
 }
 
 export class AuthJwtDto extends RefreshRequsetDto {
@@ -28,7 +28,7 @@ export class LoginRequestDto {
 	@IsString()
 	@Expose()
 	username: string;
-	@ApiProperty()
+	@ApiProperty({ example: 'Abcd@1234' })
 	@IsStrongPassword({}, { message: 'Password must be at least of length 8 and includes numbers, lower and upper case letters and symbols.' })
 	@Expose()
 	password: string;

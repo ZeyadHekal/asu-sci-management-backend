@@ -5,7 +5,7 @@ import { Privilege } from './privilege.entity';
 export class ParameterizedPrivilege extends Privilege {
 	validateParameters(params: any): boolean {
 		try {
-			const structure = JSON.parse(this.parameterStructure);
+			// const structure = JSON.parse(this.parameterStructure);
 			// Use a library like AJV for JSON schema validation
 			return true;
 		} catch (e) {
