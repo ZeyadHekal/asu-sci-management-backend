@@ -1,5 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, ManyToMany, JoinTable, JoinColumn } from 'typeorm';
-import { Privilege } from 'src/database/privileges/privilege.entity';
+import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { ManagementEntity } from 'src/base/base.entity';
 import { Expose } from 'class-transformer';
 import { UUID } from 'crypto';
@@ -21,15 +20,15 @@ export class DeviceReport extends ManagementEntity {
 	@Expose()
 	fixMessage: UUID;
 
-    @Column({ nullable: false, name: 'device_id'})
+	@Column({ nullable: false, name: 'device_id' })
 	@Expose()
 	deviceId: UUID;
 
-    @Column({ nullable: false, name: 'app_id'})
+	@Column({ nullable: false, name: 'app_id' })
 	@Expose()
 	appId: UUID;
 
-    @Column({ nullable: false, name: 'reporter_id' })
+	@Column({ nullable: false, name: 'reporter_id' })
 	@Expose()
 	reporterId: UUID;
 
@@ -37,12 +36,11 @@ export class DeviceReport extends ManagementEntity {
 	@JoinColumn({ name: 'device_id' })
 	device: Promise<Device>;
 
-    @ManyToOne(() => Application, { nullable: false, lazy: true, onDelete: 'RESTRICT', onUpdate: 'CASCADE' })
+	@ManyToOne(() => Application, { nullable: false, lazy: true, onDelete: 'RESTRICT', onUpdate: 'CASCADE' })
 	@JoinColumn({ name: 'app_id' })
 	app: Promise<Application>;
 
-    @ManyToOne(() => User, { nullable: false, lazy: true, onDelete: 'RESTRICT', onUpdate: 'CASCADE' })
+	@ManyToOne(() => User, { nullable: false, lazy: true, onDelete: 'RESTRICT', onUpdate: 'CASCADE' })
 	@JoinColumn({ name: 'reporter_id' })
 	user: Promise<User>;
-
 }

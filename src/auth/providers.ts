@@ -19,7 +19,9 @@ export class AuthenticationGuard implements CanActivate {
 		}
 
 		const request = context.switchToHttp().getRequest();
-		let [type, token] = request.headers.authorization?.split(' ') ?? [];
+		const split = request.headers.authorization?.split(' ') ?? [];
+		const type = split[0];
+		let token = split[1];
 		if (type !== 'Bearer') token = null;
 		if (!token) {
 			throw new UnauthorizedException();
@@ -34,17 +36,5 @@ export class AuthenticationGuard implements CanActivate {
 			throw new UnauthorizedException();
 		}
 		return true;
-	}
-}
-
-@Injectable()
-export class ProtectResourceGuard implements CanActivate {
-	constructor(private reflector: Reflector) {}
-
-	async canActivate(context: ExecutionContext): Promise<boolean> {
-		const isPublicHandler = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [context.getHandler()]);
-		const isPublicClass = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [context.getClass()]);
-
-		return;
 	}
 }

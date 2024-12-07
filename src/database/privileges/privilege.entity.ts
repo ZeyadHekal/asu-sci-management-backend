@@ -2,7 +2,6 @@ import { Entity, Column, ManyToMany, PrimaryColumn } from 'typeorm';
 import { UserType } from 'src/database/users/user-type.entity';
 import { User } from 'src/database/users/user.entity';
 import { ManagementEntity } from 'src/base/base.entity';
-import { JSONSchemaType } from 'ajv';
 import { OmitType } from '@nestjs/swagger';
 
 @Entity('privileges')
@@ -26,9 +25,9 @@ export class Privilege extends OmitType(ManagementEntity, ['id']) {
 		data: string[]; // Entity IDs or custom data values
 	}[];
 
-	@ManyToMany(() => User, (user) => user.privileges)
-	users: User[];
+	@ManyToMany(() => User, (user) => user.privileges, { lazy: true, cascade: true })
+	users: Promise<User[]>;
 
-	@ManyToMany(() => UserType, (userType) => userType.privileges)
-	userTypes: UserType[];
+	@ManyToMany(() => UserType, (userType) => userType.privileges, { lazy: true, cascade: true })
+	userTypes: Promise<UserType[]>;
 }

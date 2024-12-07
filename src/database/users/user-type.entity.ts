@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToMany, JoinTable } from 'typeorm';
+import { Entity, Column, ManyToMany, JoinTable } from 'typeorm';
 import { Privilege } from 'src/database/privileges/privilege.entity';
 import { ManagementEntity } from 'src/base/base.entity';
 import { Expose } from 'class-transformer';

@@ -1,11 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, ManyToMany, JoinTable, JoinColumn } from 'typeorm';
+import { Entity, Column, ManyToOne, ManyToMany, JoinTable, JoinColumn } from 'typeorm';
 import { Privilege } from 'src/database/privileges/privilege.entity';
 import { UserType } from './user-type.entity';
 import { ManagementEntity } from 'src/base/base.entity';
 import { Expose } from 'class-transformer';
 import { UUID } from 'crypto';
 import { Course } from '../courses/course.entity';
-import { Event_schedule } from '../events/event_schedules.entity';
+import { EventSchedule } from '../events/event_schedules.entity';
 
 @Entity('users')
 export class User extends ManagementEntity {
@@ -43,8 +43,8 @@ export class User extends ManagementEntity {
 	@JoinTable({ name: 'doctors_courses' })
 	courses: Promise<Course[]>;
 
-	@ManyToMany(() => Event_schedule, (eventSchedule) => eventSchedule.assisstant)
-	event_schedules: Event_schedule[];
+	@ManyToMany(() => EventSchedule, (eventSchedule) => eventSchedule.assisstant, { lazy: true, cascade: true })
+	event_schedules: Promise<EventSchedule[]>;
 
 	async getEffectivePrivileges(): Promise<Privilege[]> {
 		const typePrivileges = (await (await this.userType)?.privileges) || [];

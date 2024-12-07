@@ -8,34 +8,32 @@ import { ManagementEntity } from 'src/base/base.entity';
 import { OmitType } from '@nestjs/swagger';
 
 @Entity('student_course_degrees')
-export class Student_courses_degree extends OmitType(ManagementEntity,['id']){
-	@PrimaryColumn({name:'student_id'})
+export class StudentCoursesDegree extends OmitType(ManagementEntity, ['id']) {
+	@PrimaryColumn({ name: 'student_id' })
 	@Expose()
 	studentId: UUID;
 
-	@PrimaryColumn({name:'course_id'})
+	@PrimaryColumn({ name: 'course_id' })
 	@Expose()
 	courseId: UUID;
 
-	@PrimaryColumn({name:'event_id'})
+	@PrimaryColumn({ name: 'event_id' })
 	@Expose()
 	eventId: UUID;
 
-    @Column()
+	@Column()
 	@Expose()
 	degree: number;
 
-
 	@ManyToOne(() => Student, { nullable: false, lazy: true, onDelete: 'RESTRICT', onUpdate: 'CASCADE' })
 	@JoinColumn({ name: 'student_id' })
-	student:Promise<Student>;
+	student: Promise<Student>;
 
 	@ManyToOne(() => Course, { nullable: false, lazy: true, onDelete: 'RESTRICT', onUpdate: 'CASCADE' })
 	@JoinColumn({ name: 'course_id' })
-	course:Promise<Course>;
+	course: Promise<Course>;
 
 	@ManyToOne(() => Event, { nullable: false, lazy: true, onDelete: 'RESTRICT', onUpdate: 'CASCADE' })
 	@JoinColumn({ name: 'event_id' })
-	event:Promise<Event>;
-
+	event: Promise<Event>;
 }

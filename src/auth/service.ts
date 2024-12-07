@@ -31,6 +31,7 @@ export class AuthService {
 			if (!user || !payload.refresh) throw new UnauthorizedException();
 			return this.generateTokens(payload.user_id);
 		} catch (error) {
+			console.log(error);
 			throw new UnauthorizedException();
 		}
 	}

@@ -1,14 +1,13 @@
-import { Entity, Column, JoinColumn ,OneToOne, PrimaryColumn, ManyToMany, JoinTable} from 'typeorm';
+import { Entity, Column, JoinColumn, OneToOne, PrimaryColumn } from 'typeorm';
 import { User } from '../users/user.entity';
 import { Expose } from 'class-transformer';
 import { ManagementEntity } from 'src/base/base.entity';
 import { UUID } from 'crypto';
-import { Course } from '../courses/course.entity';
 import { OmitType } from '@nestjs/swagger';
 
 @Entity('students')
-export class Student extends OmitType(ManagementEntity,['id']){
-    @PrimaryColumn({name:'user_id'})
+export class Student extends OmitType(ManagementEntity, ['id']) {
+	@PrimaryColumn({ name: 'id' })
 	@Expose()
 	id: UUID;
 
@@ -24,17 +23,11 @@ export class Student extends OmitType(ManagementEntity,['id']){
 	@Expose()
 	program: string;
 
-    @Column({ nullable: true })
+	@Column({ nullable: true })
 	@Expose()
 	photo: string;
 
-
 	@OneToOne(() => User, { nullable: false, lazy: true, onDelete: 'RESTRICT', onUpdate: 'CASCADE' })
-	@JoinColumn({name:'user_id'})
+	@JoinColumn({ name: 'user_id' })
 	user: Promise<User>;
-
-
 }
-
-
-
