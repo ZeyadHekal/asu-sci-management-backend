@@ -1,6 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Privilege } from './privileges/privilege.entity';
+import { Privilege, UserPrivilegeAssignment, UserTypePrivilegeAssignment } from './privileges/privilege.entity';
 import { ConfigService } from '@nestjs/config';
 import { User } from './users/user.entity';
 import { UserType } from './users/user-type.entity';
@@ -43,6 +43,8 @@ import { DeviceApplications } from './devices/devices_applications.entity';
 			User,
 			UserType,
 			Privilege,
+			UserPrivilegeAssignment,
+			UserTypePrivilegeAssignment,
 			Student,
 			Course,
 			Material,

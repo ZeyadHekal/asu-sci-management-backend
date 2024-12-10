@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
-import { AuthJwtDto, LoginSuccessDto } from './dtos';
+import { AuthJwtDto, LoginSuccessDto, PrivilegRefreshDto } from './dtos';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from 'src/database/users/user.entity';
@@ -19,12 +19,12 @@ export class AuthService {
 			throw new BadRequestException('Incorrect username or password');
 		}
 		// Get privileges
-		const privileges = '';
+		const privileges = await user.getUserPrivileges();
 		const tokens = await this.generateTokens(user.id);
-		return { ...tokens, privileges };
+		return { ...tokens, privileges: Object.keys(privileges) };
 	}
 
-	async refresh(token: string): Promise<AuthJwtDto> {
+	async refreshTokens(token: string): Promise<AuthJwtDto> {
 		try {
 			const payload = await this.jwtService.verifyAsync(token);
 			const user = await this.userRepository.findOneBy({ id: payload.user_id });
@@ -40,5 +40,9 @@ export class AuthService {
 		const accessToken = await this.jwtService.signAsync({ user_id }, { expiresIn: '15min' });
 		const refreshToken = await this.jwtService.signAsync({ user_id, refresh: true }, { expiresIn: '30min' });
 		return { accessToken, refreshToken };
+	}
+
+	async getPrivileges(user: User): Promise<PrivilegRefreshDto> {
+		return { privileges: Object.keys(await user.getUserPrivileges()) };
 	}
 }

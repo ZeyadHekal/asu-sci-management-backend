@@ -1,33 +1,70 @@
-import { Entity, Column, ManyToMany, PrimaryColumn } from 'typeorm';
+import { Entity, Column, ManyToOne, PrimaryGeneratedColumn, PrimaryColumn, JoinColumn } from 'typeorm';
 import { UserType } from 'src/database/users/user-type.entity';
 import { User } from 'src/database/users/user.entity';
 import { ManagementEntity } from 'src/base/base.entity';
+import { PrivilegeCode } from 'src/privileges/definition';
+import { EntityName } from 'src/privileges/entity-map';
+import { UUID } from 'crypto';
 import { OmitType } from '@nestjs/swagger';
 
 @Entity('privileges')
-export class Privilege extends OmitType(ManagementEntity, ['id']) {
-	@PrimaryColumn('uuid')
-	code: string;
+export class Privilege extends ManagementEntity {
+	@Column({ type: 'enum', enum: PrivilegeCode })
+	code: PrivilegeCode; // e.g., 'VIEW_COURSE', 'MANAGE_COURSE'
 
 	@Column()
-	name: string;
+	friendlyName: string; // e.g., 'VIEW_COURSE', 'MANAGE_COURSE'
 
 	@Column()
-	group: string;
+	group: string; // e.g., 'COURSES', 'REPORTS'
 
-	@Column({ nullable: true, type: 'json' })
-	parameterStructure: {
-		// This will be used for parameterized privileges
-		type: 'entity' | 'custom';
-		entityName?: string;
-		fieldLocation: 'body' | 'query' | 'path';
-		fieldName: string;
-		data: string[]; // Entity IDs or custom data values
-	}[];
+	@Column({ nullable: true })
+	paramKey: string; // e.g., 'courseId' - the route param to check
 
-	@ManyToMany(() => User, (user) => user.privileges, { lazy: true, cascade: true })
-	users: Promise<User[]>;
+	@Column({ default: false })
+	requiresResource: boolean; // if true, the privilege is tied to a resource ID
 
-	@ManyToMany(() => UserType, (userType) => userType.privileges, { lazy: true, cascade: true })
-	userTypes: Promise<UserType[]>;
+	@Column({ nullable: true })
+	entityName: EntityName; // e.g., 'course', 'report'
+}
+
+@Entity('user_privilege_assignments')
+export class UserPrivilegeAssignment extends OmitType(ManagementEntity, ['id']) {
+	@PrimaryColumn()
+	user_id: UUID;
+
+	@PrimaryColumn()
+	privilege_id: UUID;
+
+	@ManyToOne(() => User, (user) => user.assignments, { lazy: true })
+	@JoinColumn({ name: "user_id" })
+	user: Promise<User>;
+
+	@ManyToOne(() => Privilege, { lazy: true })
+	@JoinColumn({ name: "privilege_id" })
+	privilege: Promise<Privilege>;
+
+	@Column('simple-array', { nullable: true })
+	resourceIds: UUID[];
+}
+
+@Entity('user_type_privilege_assignments')
+export class UserTypePrivilegeAssignment extends OmitType(ManagementEntity, ['id']) {
+
+	@PrimaryColumn({ type: 'string' })
+	user_type_id: UUID;
+
+	@PrimaryColumn({ type: 'string' })
+	privilege_id: UUID;
+
+	@Column('simple-array', { nullable: true })
+	resourceIds: UUID[];
+
+	@ManyToOne(() => Privilege, { lazy: true })
+	@JoinColumn({ name: 'privilege_id' })
+	privilege: Promise<Privilege>;
+
+	@ManyToOne(() => UserType, (ut) => ut.assignments, { lazy: true })
+	@JoinColumn({ name: 'user_type_id' })
+	userType: Promise<UserType>;
 }

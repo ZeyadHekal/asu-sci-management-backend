@@ -34,7 +34,7 @@ export class Course extends ManagementEntity {
 	@Expose()
 	attendanceMarks: number;
 
-	@ManyToMany(() => User, (user) => user.courses, { lazy: true, cascade: true })
+	@ManyToMany(() => User, (user) => user.courses, { lazy: true })
 	users: Promise<User[]>;
 
 	@ManyToMany(() => Application, (application) => application.courses, {

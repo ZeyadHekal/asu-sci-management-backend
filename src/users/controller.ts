@@ -6,7 +6,9 @@ import { User } from 'src/database/users/user.entity';
 import { UUID } from 'crypto';
 import { ApiCreatedResponse, ApiOkResponse } from '@nestjs/swagger';
 import { DeleteDto } from 'src/base/delete.dto';
+import { Public } from 'src/auth/decorators';
 
+@Public()
 @Controller('users')
 export class UserController extends BaseController<User, CreateUserDto, UpdateUserDto, UserDto, UserListDto> {
 	constructor(private readonly userService: UserService) {
@@ -34,7 +36,7 @@ export class UserController extends BaseController<User, CreateUserDto, UpdateUs
 
 	@Get(':user_id')
 	@ApiOkResponse({ type: UserDto })
-	getById(@Param(':user_id') id: UUID): Promise<UserDto> {
+	getById(@Param('user_id') id: UUID): Promise<UserDto> {
 		return super.getById(id);
 	}
 

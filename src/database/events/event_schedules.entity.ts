@@ -37,7 +37,6 @@ export class EventSchedule extends ManagementEntity {
 	lab: Promise<Lab>;
 
 	@ManyToMany(() => User, (user) => user.event_schedules, {
-		cascade: true,
 		lazy: true,
 	})
 	@JoinTable({ name: 'event_schedules_assisstance' })
