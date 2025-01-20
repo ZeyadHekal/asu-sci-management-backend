@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
 import { UserService } from './service';
-import { CreateUserDto, UpdateUserDto, UserDto, UserListDto } from './dtos';
+import { CreateStudentDto, CreateUserDto, UpdateUserDto, UserDto, UserListDto } from './dtos';
 import { BaseController } from 'src/base/base.controller';
 import { User } from 'src/database/users/user.entity';
 import { UUID } from 'crypto';
@@ -19,6 +19,12 @@ export class UserController extends BaseController<User, CreateUserDto, UpdateUs
 	@ApiCreatedResponse({ type: UserDto })
 	create(@Body() createDto: CreateUserDto): Promise<UserDto> {
 		return super.create(createDto);
+	}
+
+	@Post('create-student')
+	@ApiCreatedResponse({ type: UserDto })
+	createStudent(@Body() createDto: CreateStudentDto): Promise<UserDto> {
+		return this.userService.createStudent(createDto);
 	}
 
 	@Get()
@@ -46,10 +52,9 @@ export class UserController extends BaseController<User, CreateUserDto, UpdateUs
 		return super.update(id, updateDto);
 	}
 
-	// TODO: Fix return type
 	@Delete(':user_ids')
 	@ApiOkResponse({ type: DeleteDto })
-	delete(@Param('user_ids') ids: string): Promise<any> {
+	delete(@Param('user_ids') ids: string): Promise<DeleteDto> {
 		return super.delete(ids);
 	}
 }

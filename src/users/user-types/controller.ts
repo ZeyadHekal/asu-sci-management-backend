@@ -1,12 +1,16 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
 import { UserTypeService } from './service';
-import { CreateUserTypeDto, UpdateUserTypeDto, UserTypeDto } from './dtos';
+import { CreateUserTypeDto, UpdateUserTypeDto, UserTypeDto, UserTypeWithPrivilegeDto } from './dtos';
 import { UUID } from 'crypto';
 import { BaseController } from 'src/base/base.controller';
 import { UserType } from 'src/database/users/user-type.entity';
-import { Public } from 'src/auth/decorators';
+import { RequirePrivileges } from 'src/privileges/guard/decorator';
+import { PrivilegeCode } from 'src/privileges/definition';
+import { ApiResponse } from '@nestjs/swagger';
+import { DeleteDto } from 'src/base/delete.dto';
+import { PrivilegeAssignmentDto } from 'src/privileges/dtos';
 
-@Public()
+@RequirePrivileges({ and: [PrivilegeCode.MANAGE_USER_TYPES] })
 @Controller('user-types')
 export class UserTypeController extends BaseController<UserType, CreateUserTypeDto, UpdateUserTypeDto, UserTypeDto, UserTypeDto> {
 	constructor(private readonly userTypeService: UserTypeService) {
@@ -14,26 +18,44 @@ export class UserTypeController extends BaseController<UserType, CreateUserTypeD
 	}
 
 	@Post()
+	@ApiResponse({ type: UserTypeDto })
 	create(@Body() createUserDto: CreateUserTypeDto) {
 		return this.userTypeService.create(createUserDto);
 	}
 
 	@Get()
+	@RequirePrivileges({ or: [PrivilegeCode.MANAGE_USER_TYPES, PrivilegeCode.MANAGE_USERS] })
+	@ApiResponse({ type: UserTypeDto, isArray: true })
 	findAll() {
 		return this.getAll();
 	}
 
+	@Get('with-privileges')
+	@ApiResponse({ type: UserTypeWithPrivilegeDto, isArray: true })
+	findAllWithPrivileges() {
+		return this.userTypeService.findAllWithPrivileges();
+	}
+
 	@Get(':id')
+	@ApiResponse({ type: UserTypeDto })
 	getById(@Param('id') id: UUID) {
 		return super.getById(id);
 	}
 
+	@Get(':id/privileges')
+	@ApiResponse({ type: PrivilegeAssignmentDto, isArray: true })
+	async getPrivileges(@Param('id') id: UUID): Promise<PrivilegeAssignmentDto[]> {
+		return this.userTypeService.getPrivileges(id);
+	}
+
 	@Patch(':id')
+	@ApiResponse({ type: UserTypeDto })
 	update(@Param('id') id: UUID, @Body() updateUserDto: UpdateUserTypeDto) {
 		return super.update(id, updateUserDto);
 	}
 
 	@Delete(':ids')
+	@ApiResponse({ type: DeleteDto })
 	delete(@Param('ids') ids: UUID) {
 		return super.delete(ids);
 	}

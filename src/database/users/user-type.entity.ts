@@ -13,4 +13,5 @@ export class UserType extends ManagementEntity {
 		lazy: true,
 	})
 	assignments: Promise<UserTypePrivilegeAssignment[]>;
+	__assignments__?: UserTypePrivilegeAssignment[];
 }

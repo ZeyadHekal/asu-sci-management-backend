@@ -8,6 +8,8 @@ import { Privilege, UserPrivilegeAssignment, UserTypePrivilegeAssignment } from 
 import { PrivilegeCode } from './definition';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserType } from 'src/database/users/user-type.entity';
+import { DeleteDto } from 'src/base/delete.dto';
+import { transformToInstance } from 'src/base/transformToInstance';
 
 @Injectable()
 export class PrivilegeService {
@@ -42,7 +44,7 @@ export class PrivilegeService {
 		const userType = await this.userTypeRepo.findOne({ where: { id: userTypeId } });
 		const privilege = await this.privilegesRepo.findOne({ where: { code: privilegeCode } });
 		if (!userType || !privilege) {
-			throw new Error('User type or privilege not found');
+			throw new BadRequestException('User type or privilege not found');
 		}
 
 		const assignment = new UserTypePrivilegeAssignment();
@@ -52,12 +54,24 @@ export class PrivilegeService {
 		await this.userTypePrivAssignmentsRepo.save(assignment);
 	}
 
+	async unassignPrivilegeToUserType(userTypeId: UUID, privilegeCode: PrivilegeCode): Promise<DeleteDto> {
+		const privilege = await this.privilegesRepo.findOne({ where: { code: privilegeCode } });
+		if (!privilege) {
+			throw new BadRequestException('User type or privilege not found');
+		}
+		const userTypeAssignment = await this.userTypePrivAssignmentsRepo.findOne({ where: { user_type_id: userTypeId, privilege_id: privilege.id } });
+		if (!userTypeAssignment) {
+			throw new BadRequestException('User type or privilege not found');
+		}
+		return transformToInstance(DeleteDto, this.userTypePrivAssignmentsRepo.delete({ user_type_id: userTypeId, privilege_id: privilege.id }));
+	}
+
 	private async validateResourceIds(entityName: string | null, resourceIds?: number[]) {
 		if (!entityName || !resourceIds || resourceIds.length === 0) return;
 
 		const entityClass = entityNameToEntityClass[entityName];
 		if (!entityClass) {
-			throw new Error(`No entity class mapping found for entityName: ${entityName}`);
+			throw new BadRequestException(`No entity class mapping found for entityName: ${entityName}`);
 		}
 
 		const repo = this.dataSource.getRepository(entityClass);

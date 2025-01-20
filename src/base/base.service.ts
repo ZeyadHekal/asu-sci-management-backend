@@ -4,6 +4,7 @@ import { UUID } from 'crypto';
 import { ManagementEntity } from './base.entity';
 import { IService } from './interface.service';
 import { DeleteDto } from './delete.dto';
+import { NotFoundException } from '@nestjs/common';
 
 export class BaseService<Entity extends ManagementEntity, CreateDto, UpdateDto, GetDto, GetListDto>
 	implements IService<Entity, CreateDto, UpdateDto, GetDto, GetListDto>
@@ -40,6 +41,9 @@ export class BaseService<Entity extends ManagementEntity, CreateDto, UpdateDto, 
 
 	async getById(id: UUID) {
 		const entity = await this.repository.findOneBy({ id });
+		if (!entity) {
+			throw new NotFoundException();
+		}
 		return this.mapEntityToGetDto(entity);
 	}
 

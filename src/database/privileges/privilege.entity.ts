@@ -63,8 +63,10 @@ export class UserTypePrivilegeAssignment extends OmitType(ManagementEntity, ['id
 	@ManyToOne(() => Privilege, { lazy: true })
 	@JoinColumn({ name: 'privilege_id' })
 	privilege: Promise<Privilege>;
+	__privilege__?: Privilege;
 
 	@ManyToOne(() => UserType, (ut) => ut.assignments, { lazy: true })
 	@JoinColumn({ name: 'user_type_id' })
 	userType: Promise<UserType>;
+	__userType__?: UserType;
 }

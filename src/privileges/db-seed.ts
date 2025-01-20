@@ -36,6 +36,10 @@ export class PrivilegeSeeder implements OnModuleInit {
 			if (dbPrivilege) {
 				let updated = false;
 
+				if (dbPrivilege.friendlyName !== seedPriv.friendlyName) {
+					dbPrivilege.friendlyName = seedPriv.friendlyName;
+					updated = true;
+				}
 				if (dbPrivilege.group !== seedPriv.group) {
 					dbPrivilege.group = seedPriv.group;
 					updated = true;

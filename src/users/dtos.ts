@@ -24,6 +24,8 @@ export class CreateUserDto {
 	userTypeId: UUID;
 }
 
+export class CreateStudentDto extends OmitType(CreateUserDto, ['userTypeId']) { }
+
 export class UpdateUserDto extends PartialType(CreateUserDto) {}
 
 export class UserDto extends OmitType(CreateUserDto, ['password']) {

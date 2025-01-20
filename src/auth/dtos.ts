@@ -26,7 +26,7 @@ export class LoginSuccessDto extends IntersectionType(AuthJwtDto, PrivilegRefres
 
 
 export class LoginRequestDto {
-	@ApiProperty()
+	@ApiProperty({ example: 'admin' })
 	@IsString()
 	@Expose()
 	username: string;

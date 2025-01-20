@@ -12,9 +12,9 @@ import { AuthModule } from './auth/module';
 			envFilePath: ['.env.local', '.env.dev', '.env.stage', '.env.prod', '.env'],
 		}),
 		DatabaseModule,
-		PrivilegesModule,
 		UserModule,
 		AuthModule,
+		PrivilegesModule,
 	],
 })
 export class AppModule {}
