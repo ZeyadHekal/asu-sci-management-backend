@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
-import { CreateStudentDto, CreateUserDto, UpdateUserDto, UserDto, UserListDto } from './dtos';
+import { CreateStudentPrivilegesDto, CreateUserPrivilegesDto, UpdateUserPrivilegesDto, UserPrivilegesDto, UserListPrivilegesDto } from './dtos';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserType } from 'src/database/users/user-type.entity';
@@ -9,16 +9,16 @@ import { BaseService } from 'src/base/base.service';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
-export class UserService extends BaseService<User, CreateUserDto, UpdateUserDto, UserDto, UserListDto> {
+export class UserService extends BaseService<User, CreateUserPrivilegesDto, UpdateUserPrivilegesDto, UserPrivilegesDto, UserListPrivilegesDto> {
 	constructor(
 		private readonly configService: ConfigService,
 		@InjectRepository(User) private readonly userRepository: Repository<User>,
 		@InjectRepository(UserType) private readonly userTypeRepository: Repository<UserType>,
 	) {
-		super(User, CreateUserDto, UpdateUserDto, UserDto, UserListDto, userRepository);
+		super(User, CreateUserPrivilegesDto, UpdateUserPrivilegesDto, UserPrivilegesDto, UserListPrivilegesDto, userRepository);
 	}
 
-	async beforeCreateDto(dto: CreateUserDto): Promise<CreateUserDto> {
+	async beforeCreateDto(dto: CreateUserPrivilegesDto): Promise<CreateUserPrivilegesDto> {
 		const userType = await this.userTypeRepository.findOneBy({ id: dto.userTypeId });
 		if (!userType) {
 			throw new BadRequestException('Invalid user type id!');
@@ -31,7 +31,7 @@ export class UserService extends BaseService<User, CreateUserDto, UpdateUserDto,
 		return dto;
 	}
 
-	async beforeUpdateDto(dto: UpdateUserDto): Promise<UpdateUserDto> {
+	async beforeUpdateDto(dto: UpdateUserPrivilegesDto): Promise<UpdateUserPrivilegesDto> {
 		const userType = await this.userTypeRepository.findOneBy({ id: dto.userTypeId });
 		if (!userType) {
 			throw new BadRequestException('Invalid user type id!');
@@ -48,7 +48,7 @@ export class UserService extends BaseService<User, CreateUserDto, UpdateUserDto,
 		return dto;
 	}
 
-	async createStudent(dto: CreateStudentDto): Promise<UserDto> {
+	async createStudent(dto: CreateStudentPrivilegesDto): Promise<UserPrivilegesDto> {
 		const studentType = await this.userTypeRepository.findOneBy({ name: 'Student' });
 		if (!studentType) {
 			throw new InternalServerErrorException('An error occured, please contact admin');
