@@ -1,14 +1,14 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PrivilegesModule } from './privileges/module';
-import { DatabaseModule } from 'src/database/module';
-import { UserModule } from 'src/users/module';
+import { DatabaseModule } from './database/module';
+import { UserModule } from './users/module';
 import { AuthModule } from './auth/module';
-import { LabsModule } from './labs/module';
-import { EventsModule } from './events/module';
-import { StudentsModule } from './students/module';
-import { CoursesModule } from './courses/module';
-import { EventSchedulesModule } from './event-schedules/module';
+import { LabsModule } from './modules/labs/module';
+import { EventsModule } from './modules/events/module';
+import { StudentsModule } from './modules/students/module';
+import { CoursesModule } from './modules/courses/module';
+import { EventSchedulesModule } from './modules/event-schedules/module';
 
 @Module({
 	imports: [
@@ -20,6 +20,7 @@ import { EventSchedulesModule } from './event-schedules/module';
 		UserModule,
 		AuthModule,
 		PrivilegesModule,
+		// Project modules
 		LabsModule,
 		EventsModule,
 		StudentsModule,
