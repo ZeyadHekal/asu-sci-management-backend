@@ -8,7 +8,7 @@ import { Student } from './students/student.entity';
 import { Course } from './courses/course.entity';
 import { Material } from './materials/material.entity';
 import { Lab } from './labs/lab.entity';
-import { Application } from './applications/application.entity';
+import { Software } from './softwares/software.entity';
 import { StudentCourses } from './students/student_courses.entity';
 import { StudentCoursesDegree } from './students/student_course_degrees.entity';
 import { Event } from './events/event.entity';
@@ -20,7 +20,7 @@ import { LabsSessions } from './lab_sessions/lab_session.entity';
 import { CoursesLabs } from './courses/course_labs.entity';
 import { DeviceReport } from './devices/devices_reports.entity';
 import { Device } from './devices/device.entity';
-import { DeviceApplications } from './devices/devices_applications.entity';
+import { DeviceSoftwares } from './devices/devices_softwares.entity';
 
 @Global()
 @Module({
@@ -49,7 +49,7 @@ import { DeviceApplications } from './devices/devices_applications.entity';
 			Course,
 			Material,
 			Lab,
-			Application,
+			Software,
 			StudentCourses,
 			Event,
 			StudentCoursesDegree,
@@ -61,7 +61,7 @@ import { DeviceApplications } from './devices/devices_applications.entity';
 			CoursesLabs,
 			DeviceReport,
 			Device,
-			DeviceApplications,
+			DeviceSoftwares,
 		]),
 	],
 	exports: [TypeOrmModule],

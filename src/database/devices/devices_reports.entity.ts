@@ -4,7 +4,7 @@ import { Expose } from 'class-transformer';
 import { UUID } from 'crypto';
 import { User } from '../users/user.entity';
 import { Device } from './device.entity';
-import { Application } from '../applications/application.entity';
+import { Software } from '../softwares/software.entity';
 
 @Entity('devices')
 export class DeviceReport extends ManagementEntity {
@@ -36,9 +36,9 @@ export class DeviceReport extends ManagementEntity {
 	@JoinColumn({ name: 'device_id' })
 	device: Promise<Device>;
 
-	@ManyToOne(() => Application, { nullable: false, lazy: true, onDelete: 'RESTRICT', onUpdate: 'CASCADE' })
+	@ManyToOne(() => Software, { nullable: false, lazy: true, onDelete: 'RESTRICT', onUpdate: 'CASCADE' })
 	@JoinColumn({ name: 'app_id' })
-	app: Promise<Application>;
+	app: Promise<Software>;
 
 	@ManyToOne(() => User, { nullable: false, lazy: true, onDelete: 'RESTRICT', onUpdate: 'CASCADE' })
 	@JoinColumn({ name: 'reporter_id' })

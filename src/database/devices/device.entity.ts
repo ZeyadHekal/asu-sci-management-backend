@@ -12,7 +12,7 @@ export class Device extends ManagementEntity {
 	@Expose()
 	IPAddress: string;
 
-	@Column()
+	@Column({ default: false })
 	@Expose()
 	hasIssue: boolean;
 

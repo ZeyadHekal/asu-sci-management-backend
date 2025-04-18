@@ -2,7 +2,7 @@ import { Entity, Column, ManyToMany, JoinTable } from 'typeorm';
 import { ManagementEntity } from 'src/base/base.entity';
 import { Expose } from 'class-transformer';
 import { User } from '../users/user.entity';
-import { Application } from '../applications/application.entity';
+import { Software } from '../softwares/software.entity';
 
 @Entity('courses')
 export class Course extends ManagementEntity {
@@ -37,9 +37,9 @@ export class Course extends ManagementEntity {
 	@ManyToMany(() => User, (user) => user.courses, { lazy: true })
 	users: Promise<User[]>;
 
-	@ManyToMany(() => Application, (application) => application.courses, {
+	@ManyToMany(() => Software, (software) => software.courses, {
 		lazy: true,
 	})
-	@JoinTable({ name: 'course_applications' })
-	applications: Promise<Application[]>;
+	@JoinTable({ name: 'course_softwares' })
+	softwares: Promise<Software[]>;
 }
