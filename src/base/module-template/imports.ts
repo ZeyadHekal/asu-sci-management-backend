@@ -6,7 +6,7 @@ import { ManagementEntity } from '../base.entity';
 
 /* Replace tips
     1- Use global find and replace, set the files to include to src/modules/your_module_name
-    2- Replace Template (Module) with the name of your module (e.g. User, EventSchedule, etc.)
+    2- Replace Template (Case-Sensitive!!!) (Module) with the name of your module (e.g. User, EventSchedule, etc.)
     3- Replace templates (Module) with the name of your module (e.g. users, event_schedules, etc.)
     4- Replace template (Module) with the name of your module (e.g. user, event_schedule, etc.)
 */
@@ -20,7 +20,7 @@ export {
     TemplatePaginationInput as PaginationInput,
 } from './dtos';
 
-// Template = Entity, remvove the following line and import it from the database
+// Template = Entity, remove the following line and import it from the database
 class Template extends ManagementEntity { }
 // export { Template as Entity } from 'src/database/templates/template.entity';
 export { Template as Entity };
