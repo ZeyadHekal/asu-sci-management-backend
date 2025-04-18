@@ -2,8 +2,9 @@ import { ApiProperty, IntersectionType, OmitType, PartialType } from '@nestjs/sw
 import { Expose, Transform } from 'class-transformer';
 import { IS_LENGTH, IsBoolean, IsNumber, IsString, IsStrongPassword, IsUUID, Length, MinLength } from 'class-validator';
 import { UUID } from 'crypto';
-import { IPaginationOutput, PaginationInput } from './imports';
+import { IPaginationOutput } from './imports';
 import { Course } from 'src/database/courses/course.entity';
+import { PaginationInput } from 'src/base/pagination.input';
 
 export class CreateCourseDto {
 	@ApiProperty()
