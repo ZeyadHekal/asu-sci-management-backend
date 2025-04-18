@@ -1,8 +1,8 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { UserService } from './service';
-import { CreateStudentDto, CreateUserDto, UpdateUserDto, UserDto, UserListDto, UserPagedDto, UserPaginationInput } from './dtos';
+import { CreateStudentDto, CreateUserDto as CreateDto, UpdateUserDto as UpdateDto, UserDto as GetDto, UserListDto as GetListDto, UserPagedDto, UserPaginationInput } from './dtos';
 import { BaseController } from 'src/base/base.controller';
-import { User } from 'src/database/users/user.entity';
+import { User as Entity } from 'src/database/users/user.entity';
 import { UUID } from 'crypto';
 import { ApiCreatedResponse, ApiOkResponse } from '@nestjs/swagger';
 import { DeleteDto } from 'src/base/delete.dto';
@@ -12,44 +12,44 @@ import { RequirePrivileges } from 'src/privileges/guard/decorator';
 
 @RequirePrivileges({ and: [PrivilegeCode.MANAGE_USERS] })
 @Controller('users')
-export class UserController extends BaseController<User, CreateUserDto, UpdateUserDto, UserDto, UserListDto> {
-	constructor(private readonly userService: UserService) {
-		super(userService, User, CreateUserDto, UpdateUserDto, UserDto, UserListDto);
+export class UserController extends BaseController<Entity, CreateDto, UpdateDto, GetDto, GetListDto> {
+	constructor(public readonly service: UserService) {
+		super(service, Entity, CreateDto, UpdateDto, GetDto, GetListDto);
 	}
 
 	@Post()
-	@ApiCreatedResponse({ type: UserDto })
-	create(@Body() createDto: CreateUserDto): Promise<UserDto> {
+	@ApiCreatedResponse({ type: GetDto })
+	create(@Body() createDto: CreateDto): Promise<GetDto> {
 		return super.create(createDto);
 	}
 
 	@Post('create-student')
-	@ApiCreatedResponse({ type: UserDto })
-	createStudent(@Body() createDto: CreateStudentDto): Promise<UserDto> {
-		return this.userService.createStudent(createDto);
+	@ApiCreatedResponse({ type: GetDto })
+	createStudent(@Body() createDto: CreateStudentDto): Promise<GetDto> {
+		return this.service.createStudent(createDto);
 	}
 
 	@Get()
-	@ApiOkResponse({ type: UserListDto })
-	getAll(): Promise<UserListDto[]> {
+	@ApiOkResponse({ type: GetListDto })
+	getAll(): Promise<GetListDto[]> {
 		return super.getAll();
 	}
 
 	@Get('paginated')
 	@ApiOkResponse({ type: UserPagedDto })
-	getPaginated(@Query() input: UserPaginationInput): Promise<IPaginationOutput<UserDto | UserListDto>> {
+	getPaginated(@Query() input: UserPaginationInput): Promise<IPaginationOutput<GetDto | GetListDto>> {
 		return super.getPaginated(input);
 	}
 
 	@Get(':user_id')
-	@ApiOkResponse({ type: UserDto })
-	getById(@Param('user_id') id: UUID): Promise<UserDto> {
+	@ApiOkResponse({ type: GetDto })
+	getById(@Param('user_id') id: UUID): Promise<GetDto> {
 		return super.getById(id);
 	}
 
 	@Patch(':user_id')
-	@ApiOkResponse({ type: UserDto })
-	update(@Param('user_id') id: UUID, @Body() updateDto: UpdateUserDto): Promise<UserDto> {
+	@ApiOkResponse({ type: GetDto })
+	update(@Param('user_id') id: UUID, @Body() updateDto: UpdateDto): Promise<GetDto> {
 		return super.update(id, updateDto);
 	}
 
