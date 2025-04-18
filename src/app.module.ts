@@ -7,7 +7,7 @@ import { AuthModule } from './auth/module';
 import { LabsModule } from './modules/labs/module';
 import { EventsModule } from './modules/events/module';
 import { StudentsModule } from './modules/students/module';
-import { CoursesModule } from './modules/courses/module';
+import { CoursesModule } from './modules/courses2/module';
 import { EventSchedulesModule } from './modules/event-schedules/module';
 
 @Module({

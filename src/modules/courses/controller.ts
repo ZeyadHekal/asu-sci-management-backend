@@ -1,53 +1,52 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { CourseService } from './service';
-import { CourseDto, CourseListDto, CreateCourseDto, UpdateCourseDto } from './dtos';
-import { BaseController } from 'src/base/base.controller';
-import { UUID } from 'crypto';
-import { ApiCreatedResponse, ApiOkResponse } from '@nestjs/swagger';
-import { DeleteDto } from 'src/base/delete.dto';
-import { Course } from 'src/database/courses/course.entity';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import {
+	Entity, CreateDto, UpdateDto, GetDto, GetListDto, DeleteDto,
+	PaginationInput, IPaginationOutput, PagedDto,
+	BaseController, Service, constants, UUID,
+	ApiCreatedResponse, ApiOkResponse,
+	RequirePrivileges, PrivilegeCode,
+} from './imports';
 
-@Controller('courses')
-export class CourseController extends BaseController<Course, CreateCourseDto, UpdateCourseDto, CourseDto, CourseListDto> {
-	constructor(private readonly courseService: CourseService) {
-		super(courseService, Course, CreateCourseDto, UpdateCourseDto, CourseDto, CourseListDto);
+@RequirePrivileges({ and: [PrivilegeCode.MANAGE_USERS] })
+@Controller(constants.pluralName)
+export class CourseController extends BaseController<Entity, CreateDto, UpdateDto, GetDto, GetListDto> {
+	constructor(public readonly service: Service) {
+		super(service, Entity, CreateDto, UpdateDto, GetDto, GetListDto);
 	}
 
 	@Post()
-	@ApiCreatedResponse({ type: CourseDto })
-	create(@Body() createDto: CreateCourseDto): Promise<CourseDto> {
+	@ApiCreatedResponse({ type: GetDto })
+	create(@Body() createDto: CreateDto): Promise<GetDto> {
 		return super.create(createDto);
 	}
 
 	@Get()
-	@ApiOkResponse({ type: CourseListDto })
-	getAll(): Promise<CourseListDto[]> {
+	@ApiOkResponse({ type: GetListDto })
+	getAll(): Promise<GetListDto[]> {
 		return super.getAll();
 	}
 
-	// TODO: Implement
 	@Get('paginated')
-	@ApiOkResponse({ type: CourseDto })
-	getPaginated(): Promise<CourseDto[]> {
-		return;
+	@ApiOkResponse({ type: PagedDto })
+	getPaginated(@Query() input: PaginationInput): Promise<IPaginationOutput<GetDto | GetListDto>> {
+		return super.getPaginated(input);
 	}
 
-	@Get(':course_id')
-	@ApiOkResponse({ type: CourseDto })
-	getById(@Param(':course_id') id: UUID): Promise<CourseDto> {
+	@Get(constants.entity_id)
+	@ApiOkResponse({ type: GetDto })
+	getById(@Param(constants.entity_id) id: UUID): Promise<GetDto> {
 		return super.getById(id);
 	}
 
-	@Patch(':course_id')
-	@ApiOkResponse({ type: CourseDto })
-	update(@Param('course_id') id: UUID, @Body() updateDto: UpdateCourseDto): Promise<CourseDto> {
+	@Patch(constants.entity_id)
+	@ApiOkResponse({ type: GetDto })
+	update(@Param(constants.entity_id) id: UUID, @Body() updateDto: UpdateDto): Promise<GetDto> {
 		return super.update(id, updateDto);
 	}
 
-	// TODO: Fix return type
-	@Delete(':course_ids')
+	@Delete(constants.entity_ids)
 	@ApiOkResponse({ type: DeleteDto })
-	delete(@Param('course_ids') ids: string): Promise<any> {
+	delete(@Param(constants.entity_ids) ids: string): Promise<DeleteDto> {
 		return super.delete(ids);
 	}
 }

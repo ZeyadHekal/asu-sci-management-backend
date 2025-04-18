@@ -1,18 +1,17 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
-import { CourseDto, CourseListDto, CreateCourseDto, UpdateCourseDto } from './dtos';
+import { Injectable } from '@nestjs/common';
+import * as imports from './imports';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { BaseService } from 'src/base/base.service';
-import { Course } from 'src/database/courses/course.entity';
 
 @Injectable()
-export class CourseService extends BaseService<Course, CreateCourseDto, UpdateCourseDto, CourseDto, CourseListDto> {
+export class CourseService extends BaseService<imports.Entity, imports.CreateDto, imports.UpdateDto, imports.GetDto, imports.GetListDto> {
 	constructor(
 		private readonly configService: ConfigService,
-		@InjectRepository(Course) private readonly courseRepository: Repository<Course>,
+		@InjectRepository(imports.Entity) protected readonly repository: Repository<imports.Entity>,
 	) {
-		super(Course, CreateCourseDto, UpdateCourseDto, CourseDto, CourseListDto, courseRepository);
+		super(imports.Entity, imports.CreateDto, imports.UpdateDto, imports.GetDto, imports.GetListDto, repository);
 	}
 
 }
