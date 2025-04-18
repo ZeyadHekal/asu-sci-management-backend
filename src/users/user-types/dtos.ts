@@ -1,7 +1,10 @@
-import { ApiProperty, PartialType } from '@nestjs/swagger';
+import { ApiProperty, IntersectionType, PartialType } from '@nestjs/swagger';
 import { Expose, Type } from 'class-transformer';
 import { IsArray, IsString } from 'class-validator';
 import { UUID } from 'crypto';
+import { IPaginationOutput } from 'src/base/interfaces/interface.pagination.output';
+import { PaginationInput } from 'src/base/pagination.input';
+import { UserType } from 'src/database/users/user-type.entity';
 import { GenericAssignPrivilegeDto, PrivilegeAssignmentDto } from 'src/privileges/dtos';
 
 export class UserTypeBase {
@@ -31,3 +34,15 @@ export class UserTypeWithPrivilegeDto extends UserTypeDto {
 	@Expose()
 	privileges: PrivilegeAssignmentDto[];
 }
+
+export class UserTypePagedDto implements IPaginationOutput<UserTypeDto> {
+	@ApiProperty({ type: () => UserTypeDto })
+	@Expose()
+	items: UserTypeDto[];
+
+	@ApiProperty()
+	@Expose()
+	total: number;
+}
+
+export class UserPaginationInput extends IntersectionType(PaginationInput, UserType) { }

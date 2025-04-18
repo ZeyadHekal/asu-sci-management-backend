@@ -1,14 +1,15 @@
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { transformToInstance } from 'src/base/transformToInstance';
 import { UUID } from 'crypto';
 import { ManagementEntity } from './base.entity';
-import { IService } from './interface.service';
+import { IService } from './interfaces/interface.service';
 import { DeleteDto } from './delete.dto';
 import { NotFoundException } from '@nestjs/common';
+import { PaginationInput } from './pagination.input';
+import { IPaginationOutput } from './interfaces/interface.pagination.output';
 
-export class BaseService<Entity extends ManagementEntity, CreateDto, UpdateDto, GetDto, GetListDto>
-	implements IService<Entity, CreateDto, UpdateDto, GetDto, GetListDto>
-{
+export class BaseService<Entity extends ManagementEntity, CreateDto, UpdateDto, GetDto, GetListDto, PageInput extends PaginationInput = PaginationInput>
+	implements IService<Entity, CreateDto, UpdateDto, GetDto, GetListDto, PageInput> {
 	constructor(
 		private entity: new () => Entity,
 		private createDto: new () => CreateDto,
@@ -34,8 +35,26 @@ export class BaseService<Entity extends ManagementEntity, CreateDto, UpdateDto, 
 		return result;
 	}
 
-	// TODO: Implement
-	async getPaginated(): Promise<GetListDto[]> {
+	async getPaginated(input: PageInput, filter?: any): Promise<IPaginationOutput<GetListDto | GetDto>> {
+		const [entities, total] = await this.repository.findAndCount({
+			skip: input.limit * (input.page - 1),
+			take: input.limit,
+			order: {
+				[input.sortBy]: input.sortOrder,
+			},
+			where: {
+				...filter,
+				... (input.ids.length > 0 ? { id: In(input.ids) } : {}),
+			},
+		});
+		const result = [] as GetDto[];
+		for (const entity of entities) {
+			result.push(await this.mapEntityToGetDto(entity));
+		}
+		return {
+			items: result,
+			total,
+		} as IPaginationOutput<GetListDto | GetDto>;
 		return;
 	}
 
@@ -59,6 +78,7 @@ export class BaseService<Entity extends ManagementEntity, CreateDto, UpdateDto, 
 	async beforeCreateDto(dto: CreateDto): Promise<CreateDto> {
 		return dto;
 	}
+
 	async beforeUpdateDto(dto: UpdateDto): Promise<UpdateDto> {
 		return dto;
 	}
@@ -66,6 +86,7 @@ export class BaseService<Entity extends ManagementEntity, CreateDto, UpdateDto, 
 	async beforeCreateEntity(entity: Entity): Promise<Entity> {
 		return entity;
 	}
+
 	async beforeUpdateEntity(entity: Entity): Promise<Entity> {
 		return entity;
 	}
