@@ -1,4 +1,4 @@
-import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, Column } from 'typeorm';
 import { ManagementEntity } from 'src/base/base.entity';
 import { Expose } from 'class-transformer';
 
@@ -7,5 +7,4 @@ export class Lab extends ManagementEntity {
 	@Column({ nullable: false, unique: true })
 	@Expose()
 	name: string;
-
 }

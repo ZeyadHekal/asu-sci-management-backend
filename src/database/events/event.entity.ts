@@ -18,15 +18,15 @@ export class Event extends ManagementEntity {
 	@Expose()
 	isExam: boolean;
 
-    @Column({ nullable: false })
+	@Column({ nullable: false })
 	@Expose()
 	isInLab: boolean;
 
-    @Column({ nullable: false})
+	@Column({ nullable: false })
 	@Expose()
 	examFiles: string;
 
-    @Column({ nullable: false })
+	@Column({ nullable: false })
 	@Expose()
 	degree: number;
 
@@ -37,5 +37,4 @@ export class Event extends ManagementEntity {
 	@ManyToOne(() => Course, { nullable: false, lazy: true, onDelete: 'RESTRICT', onUpdate: 'CASCADE' })
 	@JoinColumn({ name: 'course_id' })
 	userType: Promise<Course>;
-
 }

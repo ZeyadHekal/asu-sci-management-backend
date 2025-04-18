@@ -4,15 +4,15 @@ import { UUID } from 'crypto';
 import { Student } from './student.entity';
 import { ManagementEntity } from 'src/base/base.entity';
 import { OmitType } from '@nestjs/swagger';
-import { Event_schedule } from '../events/event_schedules.entity';
+import { EventSchedule } from '../events/event_schedules.entity';
 
 @Entity('student_event_attendance')
-export class Student_event_attendance extends OmitType(ManagementEntity,['id']){
-	@PrimaryColumn({name:'student_id'})
+export class StudentEventAttendance extends OmitType(ManagementEntity, ['id']) {
+	@PrimaryColumn({ name: 'student_id' })
 	@Expose()
 	studentId: UUID;
 
-	@PrimaryColumn({name:'event_schedule_id'})
+	@PrimaryColumn({ name: 'event_schedule_id' })
 	@Expose()
 	eventScheduleId: UUID;
 
@@ -20,20 +20,19 @@ export class Student_event_attendance extends OmitType(ManagementEntity,['id']){
 	@Expose()
 	hasAttended: boolean;
 
-    @Column()
+	@Column()
 	@Expose()
 	seatNo: number;
 
-    @Column()
+	@Column()
 	@Expose()
 	examModel: string;
 
 	@ManyToOne(() => Student, { nullable: false, lazy: true, onDelete: 'RESTRICT', onUpdate: 'CASCADE' })
 	@JoinColumn({ name: 'student_id' })
-	student:Promise<Student>;
+	student: Promise<Student>;
 
-	@ManyToOne(() => Event_schedule, { nullable: false, lazy: true, onDelete: 'RESTRICT', onUpdate: 'CASCADE' })
+	@ManyToOne(() => EventSchedule, { nullable: false, lazy: true, onDelete: 'RESTRICT', onUpdate: 'CASCADE' })
 	@JoinColumn({ name: 'event_schedule_id' })
-	event_schedule:Promise<Event_schedule>;
-
+	event_schedule: Promise<EventSchedule>;
 }

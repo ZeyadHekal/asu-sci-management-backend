@@ -1,5 +1,5 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
-import { CreateUserDto, UpdateUserDto, UserDto, UserListDto } from './dtos';
+import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { CreateStudentDto, CreateUserDto, UpdateUserDto, UserDto, UserListDto } from './dtos';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserType } from 'src/database/users/user-type.entity';
@@ -46,5 +46,16 @@ export class UserService extends BaseService<User, CreateUserDto, UpdateUserDto,
 			dto.password = await bcrypt.hash(dto.password, parseInt(this.configService.get<string>('PASSWORD_SALT', '10')));
 		}
 		return dto;
+	}
+
+	async createStudent(dto: CreateStudentDto): Promise<UserDto> {
+		const studentType = await this.userTypeRepository.findOneBy({ name: "Student" });
+		if (!studentType) {
+			throw new InternalServerErrorException("An error occured, please contact admin");
+		}
+		return this.create({
+			...dto,
+			userTypeId: studentType.id
+		});
 	}
 }

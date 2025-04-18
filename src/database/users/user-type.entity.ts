@@ -1,5 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToMany, JoinTable } from 'typeorm';
-import { Privilege } from 'src/database/privileges/privilege.entity';
+import { Entity, Column, OneToMany } from 'typeorm';
+import { UserTypePrivilegeAssignment } from 'src/database/privileges/privilege.entity';
 import { ManagementEntity } from 'src/base/base.entity';
 import { Expose } from 'class-transformer';
 
@@ -9,10 +9,9 @@ export class UserType extends ManagementEntity {
 	@Expose()
 	name: string;
 
-	@ManyToMany(() => Privilege, (privilege) => privilege.userTypes, {
-		cascade: true,
+	@OneToMany(() => UserTypePrivilegeAssignment, (assignment) => assignment.userType, {
 		lazy: true,
 	})
-	@JoinTable({ name: 'user_types_privileges' })
-	privileges: Promise<Privilege[]>;
+	assignments: Promise<UserTypePrivilegeAssignment[]>;
+	__assignments__?: UserTypePrivilegeAssignment[];
 }

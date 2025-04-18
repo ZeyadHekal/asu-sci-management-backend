@@ -1,6 +1,6 @@
 import { Expose } from 'class-transformer';
 import { UUID } from 'crypto';
-import { BaseEntity, CreateDateColumn, Generated, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { BaseEntity, CreateDateColumn, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 
 export class ManagementEntity extends BaseEntity {
 	@PrimaryGeneratedColumn('uuid')

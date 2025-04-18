@@ -1,28 +1,26 @@
 import { Entity, Column, ManyToMany, JoinTable } from 'typeorm';
 import { ManagementEntity } from 'src/base/base.entity';
 import { Expose } from 'class-transformer';
-import { Matetial } from '../materials/material.entity';
+import { Course } from '../courses/course.entity';
 
-@Entity('applications')
-export class Application extends ManagementEntity {
+@Entity('softwares')
+export class Software extends ManagementEntity {
 	@Column({ nullable: false, unique: true })
 	@Expose()
 	name: string;
 
-    @Column()
+	@Column()
 	@Expose()
 	requiredMemory: string;
 
-    @Column()
+	@Column()
 	@Expose()
 	requiredStorage: string;
 
-    @ManyToMany(() => Matetial, (material) => material.applications, {
+	@ManyToMany(() => Course, (course) => course.softwares, {
 		cascade: true,
 		lazy: true,
 	})
-	@JoinTable({ name: 'course_applications' })
-	materials: Promise<Matetial[]>;
-
-
+	@JoinTable({ name: 'course_softwares' })
+	courses: Promise<Course[]>;
 }

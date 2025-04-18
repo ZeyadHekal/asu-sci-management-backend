@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, IntersectionType } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
 import { IsJWT, IsString, IsStrongPassword } from 'class-validator';
 
@@ -16,15 +16,17 @@ export class AuthJwtDto extends RefreshRequsetDto {
 	accessToken: string;
 }
 
-export class LoginSuccessDto extends AuthJwtDto {
-	// TODO: PrivilegeListDto[]
+export class PrivilegRefreshDto {
 	@ApiProperty()
 	@Expose()
-	privileges: string;
+	privileges: string[];
 }
 
+export class LoginSuccessDto extends IntersectionType(AuthJwtDto, PrivilegRefreshDto) { }
+
+
 export class LoginRequestDto {
-	@ApiProperty()
+	@ApiProperty({ example: 'admin' })
 	@IsString()
 	@Expose()
 	username: string;

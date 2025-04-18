@@ -17,7 +17,6 @@ async function bootstrap() {
 		new ValidationPipe({
 			whitelist: true, // Removes properties not defined in the DTOs
 			transform: true,
-			forbidNonWhitelisted: true, // Optionally, throw an error if non-whitelisted properties are found
 			transformOptions: defaultTransformOptions,
 		}),
 	);

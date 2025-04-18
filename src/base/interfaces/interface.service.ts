@@ -1,10 +1,11 @@
 import { UUID } from 'crypto';
+import { PaginationInput } from '../pagination.input';
+import { IPaginationOutput } from './interface.pagination.output';
 
-export interface IService<TEntity, TCreateDto, TUpdateDto, TGetDto, TGetListDto> {
+export interface IService<TEntity, TCreateDto, TUpdateDto, TGetDto, TGetListDto, TPageInput extends PaginationInput = PaginationInput> {
 	create(createDto: TCreateDto): Promise<TGetDto>;
 	getAll(): Promise<TGetListDto[]>;
-	// TODO: Pagination
-	getPaginated(): Promise<TGetListDto[]>;
+	getPaginated(input: TPageInput, filter: any): Promise<IPaginationOutput<TGetListDto | TGetDto>>;
 	getById(id: UUID): Promise<TGetDto>;
 	update(id: UUID, updateDto: TUpdateDto): Promise<TGetDto>;
 	delete(id: UUID[]): Promise<{ affected?: number }>;
