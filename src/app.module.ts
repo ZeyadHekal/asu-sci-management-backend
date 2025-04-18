@@ -4,11 +4,14 @@ import { PrivilegesModule } from './privileges/module';
 import { DatabaseModule } from './database/module';
 import { UserModule } from './users/module';
 import { AuthModule } from './auth/module';
-import { LabsModule } from './modules/labs/module';
-import { EventsModule } from './modules/events/module';
-import { StudentsModule } from './modules/students/module';
-import { CoursesModule } from './modules/courses2/module';
-import { EventSchedulesModule } from './modules/event-schedules/module';
+import { CourseModule } from './modules/courses/module';
+import { EventScheduleModule } from './modules/event-schedules/module';
+import { EventModule } from './modules/events/module';
+import { LabModule } from './modules/labs/module';
+import { StudentModule } from './modules/students/module';
+import { DeviceModule } from './modules/devices/module';
+import { LabSessionModule } from './modules/lab-session/module';
+
 
 @Module({
 	imports: [
@@ -21,11 +24,13 @@ import { EventSchedulesModule } from './modules/event-schedules/module';
 		AuthModule,
 		PrivilegesModule,
 		// Project modules
-		LabsModule,
-		EventsModule,
-		StudentsModule,
-		CoursesModule,
-		EventSchedulesModule,
+		LabModule,
+		EventModule,
+		StudentModule,
+		CourseModule,
+		EventScheduleModule,
+		DeviceModule,
+		LabSessionModule,
 	],
 })
 export class AppModule {}

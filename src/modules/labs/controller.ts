@@ -1,53 +1,52 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { LabService } from './service';
-import { CreateLabDto, UpdateLabDto, LabDto, LabListDto } from './dtos';
-import { BaseController } from 'src/base/base.controller';
-import { UUID } from 'crypto';
-import { ApiCreatedResponse, ApiOkResponse } from '@nestjs/swagger';
-import { DeleteDto } from 'src/base/delete.dto';
-import { Lab } from 'src/database/labs/lab.entity';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import {
+	Entity, CreateDto, UpdateDto, GetDto, GetListDto, DeleteDto,
+	PaginationInput, IPaginationOutput, PagedDto,
+	BaseController, Service, constants, UUID,
+	ApiCreatedResponse, ApiOkResponse,
+	RequirePrivileges, PrivilegeCode,
+} from './imports';
 
-@Controller('users')
-export class LabController extends BaseController<Lab, CreateLabDto, UpdateLabDto, LabDto, LabListDto> {
-	constructor(private readonly labService: LabService) {
-		super(labService, Lab, CreateLabDto, UpdateLabDto, LabDto, LabListDto);
+@RequirePrivileges({ and: [PrivilegeCode.MANAGE_USERS] })
+@Controller(constants.pluralName)
+export class LabController extends BaseController<Entity, CreateDto, UpdateDto, GetDto, GetListDto> {
+	constructor(public readonly service: Service) {
+		super(service, Entity, CreateDto, UpdateDto, GetDto, GetListDto);
 	}
 
 	@Post()
-	@ApiCreatedResponse({ type: LabDto })
-	create(@Body() createDto: CreateLabDto): Promise<LabDto> {
+	@ApiCreatedResponse({ type: GetDto })
+	create(@Body() createDto: CreateDto): Promise<GetDto> {
 		return super.create(createDto);
 	}
 
 	@Get()
-	@ApiOkResponse({ type: LabListDto })
-	getAll(): Promise<LabListDto[]> {
+	@ApiOkResponse({ type: GetListDto })
+	getAll(): Promise<GetListDto[]> {
 		return super.getAll();
 	}
 
-	// TODO: Implement
 	@Get('paginated')
-	@ApiOkResponse({ type: LabDto })
-	getPaginated(): Promise<LabDto[]> {
-		return;
+	@ApiOkResponse({ type: PagedDto })
+	getPaginated(@Query() input: PaginationInput): Promise<IPaginationOutput<GetDto | GetListDto>> {
+		return super.getPaginated(input);
 	}
 
-	@Get(':lab_id')
-	@ApiOkResponse({ type: LabDto })
-	getById(@Param(':lab_id') id: UUID): Promise<LabDto> {
+	@Get(constants.entity_id)
+	@ApiOkResponse({ type: GetDto })
+	getById(@Param(constants.entity_id) id: UUID): Promise<GetDto> {
 		return super.getById(id);
 	}
 
-	@Patch(':lab_id')
-	@ApiOkResponse({ type: LabDto })
-	update(@Param('lab_id') id: UUID, @Body() updateDto: UpdateLabDto): Promise<LabDto> {
+	@Patch(constants.entity_id)
+	@ApiOkResponse({ type: GetDto })
+	update(@Param(constants.entity_id) id: UUID, @Body() updateDto: UpdateDto): Promise<GetDto> {
 		return super.update(id, updateDto);
 	}
 
-	// TODO: Fix return type
-	@Delete(':lab_ids')
+	@Delete(constants.entity_ids)
 	@ApiOkResponse({ type: DeleteDto })
-	delete(@Param('lab_ids') ids: string): Promise<any> {
+	delete(@Param(constants.entity_ids) ids: string): Promise<DeleteDto> {
 		return super.delete(ids);
 	}
 }

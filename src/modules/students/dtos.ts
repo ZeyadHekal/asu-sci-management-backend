@@ -1,7 +1,10 @@
-import { ApiProperty, OmitType, PartialType } from '@nestjs/swagger';
-import { Expose, Transform } from 'class-transformer';
-import { IS_LENGTH, IsNumber, IsString, IsStrongPassword, IsUUID, Length, MinLength } from 'class-validator';
+import { ApiProperty, IntersectionType, OmitType, PartialType } from '@nestjs/swagger';
+import { Expose } from 'class-transformer';
 import { UUID } from 'crypto';
+import { IPaginationOutput } from 'src/base/interfaces/interface.pagination.output';
+import { PaginationInput } from 'src/base/pagination.input';
+import { Entity } from './imports';
+import { IsString, IsNumber, Length } from 'class-validator';
 
 export class CreateStudentDto {
 	@ApiProperty()
@@ -31,12 +34,25 @@ export class CreateStudentDto {
 	photo: string;
 }
 
-export class UpdateStudentDto extends PartialType(CreateStudentDto) {}
 
-export class StudentDto extends OmitType(CreateStudentDto,['photo']) {
+export class UpdateStudentDto extends PartialType(CreateStudentDto) { }
+
+export class StudentDto extends OmitType(CreateStudentDto, []) {
 	@ApiProperty()
 	@Expose()
 	id: UUID;
 }
 
-export class StudentListDto extends OmitType(StudentDto, []) {}
+export class StudentListDto extends OmitType(StudentDto, []) { }
+
+export class StudentPagedDto implements IPaginationOutput<StudentDto> {
+	@ApiProperty({ type: () => StudentDto })
+	@Expose()
+	items: StudentDto[];
+
+	@ApiProperty()
+	@Expose()
+	total: number;
+}
+
+export class StudentPaginationInput extends IntersectionType(PaginationInput, Entity) { }

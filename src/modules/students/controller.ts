@@ -1,53 +1,52 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { StudentService } from './service';
-import {  CreateStudentDto, StudentDto, StudentListDto, UpdateStudentDto } from './dtos';
-import { BaseController } from 'src/base/base.controller';
-import { UUID } from 'crypto';
-import { ApiCreatedResponse, ApiOkResponse } from '@nestjs/swagger';
-import { DeleteDto } from 'src/base/delete.dto';
-import { Student } from 'src/database/students/student.entity';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import {
+	Entity, CreateDto, UpdateDto, GetDto, GetListDto, DeleteDto,
+	PaginationInput, IPaginationOutput, PagedDto,
+	BaseController, Service, constants, UUID,
+	ApiCreatedResponse, ApiOkResponse,
+	RequirePrivileges, PrivilegeCode,
+} from './imports';
 
-@Controller('students')
-export class StudentController extends BaseController<Student, CreateStudentDto, UpdateStudentDto, StudentDto, StudentListDto> {
-	constructor(private readonly studentService: StudentService) {
-		super(studentService, Student, CreateStudentDto, UpdateStudentDto, StudentDto, StudentListDto);
+@RequirePrivileges({ and: [PrivilegeCode.MANAGE_USERS] })
+@Controller(constants.pluralName)
+export class StudentController extends BaseController<Entity, CreateDto, UpdateDto, GetDto, GetListDto> {
+	constructor(public readonly service: Service) {
+		super(service, Entity, CreateDto, UpdateDto, GetDto, GetListDto);
 	}
 
 	@Post()
-	@ApiCreatedResponse({ type: StudentDto })
-	create(@Body() createDto: CreateStudentDto): Promise<StudentDto> {
+	@ApiCreatedResponse({ type: GetDto })
+	create(@Body() createDto: CreateDto): Promise<GetDto> {
 		return super.create(createDto);
 	}
 
 	@Get()
-	@ApiOkResponse({ type: StudentListDto })
-	getAll(): Promise<StudentListDto[]> {
+	@ApiOkResponse({ type: GetListDto })
+	getAll(): Promise<GetListDto[]> {
 		return super.getAll();
 	}
 
-	// TODO: Implement
 	@Get('paginated')
-	@ApiOkResponse({ type: StudentDto })
-	getPaginated(): Promise<StudentDto[]> {
-		return;
+	@ApiOkResponse({ type: PagedDto })
+	getPaginated(@Query() input: PaginationInput): Promise<IPaginationOutput<GetDto | GetListDto>> {
+		return super.getPaginated(input);
 	}
 
-	@Get(':student_id')
-	@ApiOkResponse({ type: StudentDto })
-	getById(@Param(':student_id') id: UUID): Promise<StudentDto> {
+	@Get(constants.entity_id)
+	@ApiOkResponse({ type: GetDto })
+	getById(@Param(constants.entity_id) id: UUID): Promise<GetDto> {
 		return super.getById(id);
 	}
 
-	@Patch(':student_id')
-	@ApiOkResponse({ type: StudentDto })
-	update(@Param('student_id') id: UUID, @Body() updateDto: UpdateStudentDto): Promise<StudentDto> {
+	@Patch(constants.entity_id)
+	@ApiOkResponse({ type: GetDto })
+	update(@Param(constants.entity_id) id: UUID, @Body() updateDto: UpdateDto): Promise<GetDto> {
 		return super.update(id, updateDto);
 	}
 
-	// TODO: Fix return type
-	@Delete(':student_ids')
+	@Delete(constants.entity_ids)
 	@ApiOkResponse({ type: DeleteDto })
-	delete(@Param('student_ids') ids: string): Promise<any> {
+	delete(@Param(constants.entity_ids) ids: string): Promise<DeleteDto> {
 		return super.delete(ids);
 	}
 }

@@ -1,10 +1,11 @@
-import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, Column, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
 import { ManagementEntity } from 'src/base/base.entity';
 import { Expose } from 'class-transformer';
 import { UUID } from 'crypto';
 import { Lab } from '../labs/lab.entity';
 import { User } from '../users/user.entity';
 import { DeviceReport } from './devices_reports.entity';
+import { report } from 'process';
 
 @Entity('devices')
 export class Device extends ManagementEntity {
@@ -20,10 +21,6 @@ export class Device extends ManagementEntity {
 	@Expose()
 	labId: UUID;
 
-	@Column({ nullable: false, name: 'device_report_id' })
-	@Expose()
-	deviceReportId: UUID;
-
 	@Column({ nullable: false, name: 'assisstant_id' })
 	@Expose()
 	assisstantId: UUID;
@@ -36,7 +33,7 @@ export class Device extends ManagementEntity {
 	@JoinColumn({ name: 'assisstant_id' })
 	user: Promise<User>;
 
-	@ManyToOne(() => DeviceReport, { nullable: false, lazy: true, onDelete: 'RESTRICT', onUpdate: 'CASCADE' })
-	@JoinColumn({ name: 'device_report_id' })
-	device_report: Promise<DeviceReport>;
+	@OneToMany(() => DeviceReport, (report) => report.device, { lazy: true, onDelete: 'RESTRICT', onUpdate: 'CASCADE' })
+	deviceReports: Promise<DeviceReport[]>;
 }
+

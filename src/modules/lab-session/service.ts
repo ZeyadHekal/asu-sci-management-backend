@@ -6,7 +6,7 @@ import { ConfigService } from '@nestjs/config';
 import { BaseService } from 'src/base/base.service';
 
 @Injectable()
-export class LabService extends BaseService<imports.Entity, imports.CreateDto, imports.UpdateDto, imports.GetDto, imports.GetListDto> {
+export class LabSessionService extends BaseService<imports.Entity, imports.CreateDto, imports.UpdateDto, imports.GetDto, imports.GetListDto> {
 	constructor(
 		private readonly configService: ConfigService,
 		@InjectRepository(imports.Entity) protected readonly repository: Repository<imports.Entity>,

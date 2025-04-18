@@ -1,17 +1,17 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
-import { CreateEventScheduleDto, EventScheduleDto, EventScheduleListDto, UpdateEventScheduleDto } from './dtos';
+import { Injectable } from '@nestjs/common';
+import * as imports from './imports';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { BaseService } from 'src/base/base.service';
-import { Event_schedule } from 'src/database/events/event_schedules.entity';
 
 @Injectable()
-export class EventScheduleService extends BaseService<Event_schedule, CreateEventScheduleDto, UpdateEventScheduleDto, EventScheduleDto, EventScheduleListDto> {
+export class EventScheduleService extends BaseService<imports.Entity, imports.CreateDto, imports.UpdateDto, imports.GetDto, imports.GetListDto> {
 	constructor(
 		private readonly configService: ConfigService,
-		@InjectRepository(Event_schedule) private readonly eventScheduleRepository: Repository<Event_schedule>,
+		@InjectRepository(imports.Entity) protected readonly repository: Repository<imports.Entity>,
 	) {
-		super(Event_schedule, CreateEventScheduleDto, UpdateEventScheduleDto, EventScheduleDto, EventScheduleListDto, eventScheduleRepository);
+		super(imports.Entity, imports.CreateDto, imports.UpdateDto, imports.GetDto, imports.GetListDto, repository);
 	}
+
 }

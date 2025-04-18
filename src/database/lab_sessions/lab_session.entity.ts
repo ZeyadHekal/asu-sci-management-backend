@@ -5,7 +5,7 @@ import { Course } from '../courses/course.entity';
 import { ManagementEntity } from 'src/base/base.entity';
 
 @Entity('labs_sessions')
-export class LabsSessions extends ManagementEntity {
+export class LabSession extends ManagementEntity {
 	@Column({ name: 'course_id' })
 	@Expose()
 	courseId: UUID;

@@ -9,7 +9,7 @@ import {
 
 @RequirePrivileges({ and: [PrivilegeCode.MANAGE_USERS] })
 @Controller(constants.pluralName)
-export class EventScheduleController extends BaseController<Entity, CreateDto, UpdateDto, GetDto, GetListDto> {
+export class DeviceController extends BaseController<Entity, CreateDto, UpdateDto, GetDto, GetListDto> {
 	constructor(public readonly service: Service) {
 		super(service, Entity, CreateDto, UpdateDto, GetDto, GetListDto);
 	}

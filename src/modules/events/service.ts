@@ -1,17 +1,17 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
-import { CreateEventDto, EventDto, EventListDto, UpdateEventDto } from './dtos';
+import { Injectable } from '@nestjs/common';
+import * as imports from './imports';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { BaseService } from 'src/base/base.service';
-import { Event } from 'src/database/events/event.entity';
 
 @Injectable()
-export class EventService extends BaseService<Event, CreateEventDto, UpdateEventDto, EventDto, EventListDto> {
+export class EventService extends BaseService<imports.Entity, imports.CreateDto, imports.UpdateDto, imports.GetDto, imports.GetListDto> {
 	constructor(
 		private readonly configService: ConfigService,
-		@InjectRepository(Event) private readonly eventRepository: Repository<Event>,
+		@InjectRepository(imports.Entity) protected readonly repository: Repository<imports.Entity>,
 	) {
-		super(Event, CreateEventDto, UpdateEventDto, EventDto, EventListDto, eventRepository);
+		super(imports.Entity, imports.CreateDto, imports.UpdateDto, imports.GetDto, imports.GetListDto, repository);
 	}
+
 }

@@ -1,53 +1,52 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { EventService } from './service';
-import { CreateEventDto, EventDto, EventListDto, UpdateEventDto } from './dtos';
-import { BaseController } from 'src/base/base.controller';
-import { UUID } from 'crypto';
-import { ApiCreatedResponse, ApiOkResponse } from '@nestjs/swagger';
-import { DeleteDto } from 'src/base/delete.dto';
-import { Event } from 'src/database/events/event.entity';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import {
+	Entity, CreateDto, UpdateDto, GetDto, GetListDto, DeleteDto,
+	PaginationInput, IPaginationOutput, PagedDto,
+	BaseController, Service, constants, UUID,
+	ApiCreatedResponse, ApiOkResponse,
+	RequirePrivileges, PrivilegeCode,
+} from './imports';
 
-@Controller('events')
-export class EventController extends BaseController<Event, CreateEventDto, UpdateEventDto, EventDto, EventListDto> {
-	constructor(private readonly eventService: EventService) {
-		super(eventService, Event, CreateEventDto, UpdateEventDto, EventDto, EventListDto);
+@RequirePrivileges({ and: [PrivilegeCode.MANAGE_USERS] })
+@Controller(constants.pluralName)
+export class EventController extends BaseController<Entity, CreateDto, UpdateDto, GetDto, GetListDto> {
+	constructor(public readonly service: Service) {
+		super(service, Entity, CreateDto, UpdateDto, GetDto, GetListDto);
 	}
 
 	@Post()
-	@ApiCreatedResponse({ type: EventDto })
-	create(@Body() createDto: CreateEventDto): Promise<EventDto> {
+	@ApiCreatedResponse({ type: GetDto })
+	create(@Body() createDto: CreateDto): Promise<GetDto> {
 		return super.create(createDto);
 	}
 
 	@Get()
-	@ApiOkResponse({ type: EventListDto })
-	getAll(): Promise<EventListDto[]> {
+	@ApiOkResponse({ type: GetListDto })
+	getAll(): Promise<GetListDto[]> {
 		return super.getAll();
 	}
 
-	// TODO: Implement
 	@Get('paginated')
-	@ApiOkResponse({ type: EventDto })
-	getPaginated(): Promise<EventDto[]> {
-		return;
+	@ApiOkResponse({ type: PagedDto })
+	getPaginated(@Query() input: PaginationInput): Promise<IPaginationOutput<GetDto | GetListDto>> {
+		return super.getPaginated(input);
 	}
 
-	@Get(':event_id')
-	@ApiOkResponse({ type: EventDto })
-	getById(@Param(':event_id') id: UUID): Promise<EventDto> {
+	@Get(constants.entity_id)
+	@ApiOkResponse({ type: GetDto })
+	getById(@Param(constants.entity_id) id: UUID): Promise<GetDto> {
 		return super.getById(id);
 	}
 
-	@Patch(':event_id')
-	@ApiOkResponse({ type: EventDto })
-	update(@Param('event_id') id: UUID, @Body() updateDto: UpdateEventDto): Promise<EventDto> {
+	@Patch(constants.entity_id)
+	@ApiOkResponse({ type: GetDto })
+	update(@Param(constants.entity_id) id: UUID, @Body() updateDto: UpdateDto): Promise<GetDto> {
 		return super.update(id, updateDto);
 	}
 
-	// TODO: Fix return type
-	@Delete(':event_ids')
+	@Delete(constants.entity_ids)
 	@ApiOkResponse({ type: DeleteDto })
-	delete(@Param('event_ids') ids: string): Promise<any> {
+	delete(@Param(constants.entity_ids) ids: string): Promise<DeleteDto> {
 		return super.delete(ids);
 	}
 }
