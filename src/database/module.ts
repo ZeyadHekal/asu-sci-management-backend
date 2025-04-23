@@ -16,7 +16,7 @@ import { EventSchedule } from './events/event_schedules.entity';
 import { StudentEventAttendance } from './students/student_event_attendance.entity';
 import { StudentsFiles } from './students/student_files.entity';
 import { LabSessionAttentance } from './lab_sessions/lab_session_attendance.entity';
-import { LabsSessions } from './lab_sessions/lab_session.entity';
+import { LabSession } from './lab_sessions/lab_session.entity';
 import { CoursesLabs } from './courses/course_labs.entity';
 import { DeviceReport } from './devices/devices_reports.entity';
 import { Device } from './devices/device.entity';
@@ -56,7 +56,7 @@ import { DeviceSoftwares } from './devices/devices_softwares.entity';
 			EventSchedule,
 			StudentEventAttendance,
 			StudentsFiles,
-			LabsSessions,
+			LabSession,
 			LabSessionAttentance,
 			CoursesLabs,
 			DeviceReport,

@@ -4,7 +4,7 @@ import { UUID } from 'crypto';
 import { ManagementEntity } from 'src/base/base.entity';
 import { Student } from '../students/student.entity';
 import { OmitType } from '@nestjs/swagger';
-import { LabsSessions } from './lab_session.entity';
+import { LabSession } from './lab_session.entity';
 
 @Entity('lab_session_attentance')
 export class LabSessionAttentance extends OmitType(ManagementEntity, ['id']) {
@@ -28,7 +28,7 @@ export class LabSessionAttentance extends OmitType(ManagementEntity, ['id']) {
 	@JoinColumn({ name: 'student_id' })
 	student: Promise<Student>;
 
-	@ManyToOne(() => LabsSessions, { nullable: false, lazy: true, onDelete: 'RESTRICT', onUpdate: 'CASCADE' })
+	@ManyToOne(() => LabSession, { nullable: false, lazy: true, onDelete: 'RESTRICT', onUpdate: 'CASCADE' })
 	@JoinColumn({ name: 'lab_sesstion_id' })
-	lab_sesstion: Promise<LabsSessions>;
+	lab_sesstion: Promise<LabSession>;
 }
