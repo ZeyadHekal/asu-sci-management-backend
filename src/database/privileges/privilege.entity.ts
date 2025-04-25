@@ -28,15 +28,15 @@ export class Privilege extends ManagementEntity {
 	entityName: EntityName; // e.g., 'course', 'report'
 }
 
-@Entity('user_privilege_assignments')
-export class UserPrivilegeAssignment extends OmitType(ManagementEntity, ['id']) {
+@Entity('user_privilege')
+export class UserPrivilege extends OmitType(ManagementEntity, ['id']) {
 	@PrimaryColumn()
 	user_id: UUID;
 
 	@PrimaryColumn()
 	privilege_id: UUID;
 
-	@ManyToOne(() => User, (user) => user.assignments, { lazy: true })
+	@ManyToOne(() => User, (user) => user.userPrivileges, { lazy: true })
 	@JoinColumn({ name: "user_id" })
 	user: Promise<User>;
 
@@ -48,8 +48,8 @@ export class UserPrivilegeAssignment extends OmitType(ManagementEntity, ['id']) 
 	resourceIds: UUID[];
 }
 
-@Entity('user_type_privilege_assignments')
-export class UserTypePrivilegeAssignment extends OmitType(ManagementEntity, ['id']) {
+@Entity('user_type_privilege')
+export class UserTypePrivilege extends OmitType(ManagementEntity, ['id']) {
 
 	@PrimaryColumn({ type: 'string' })
 	user_type_id: UUID;
@@ -65,7 +65,7 @@ export class UserTypePrivilegeAssignment extends OmitType(ManagementEntity, ['id
 	privilege: Promise<Privilege>;
 	__privilege__?: Privilege;
 
-	@ManyToOne(() => UserType, (ut) => ut.assignments, { lazy: true })
+	@ManyToOne(() => UserType, (ut) => ut.userTypePrivileges, { lazy: true })
 	@JoinColumn({ name: 'user_type_id' })
 	userType: Promise<UserType>;
 	__userType__?: UserType;

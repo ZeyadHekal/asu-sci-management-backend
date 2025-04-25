@@ -1,5 +1,5 @@
 import { Entity, Column, OneToMany } from 'typeorm';
-import { UserTypePrivilegeAssignment } from 'src/database/privileges/privilege.entity';
+import { UserTypePrivilege } from 'src/database/privileges/privilege.entity';
 import { ManagementEntity } from 'src/base/base.entity';
 import { Expose } from 'class-transformer';
 
@@ -9,9 +9,9 @@ export class UserType extends ManagementEntity {
 	@Expose()
 	name: string;
 
-	@OneToMany(() => UserTypePrivilegeAssignment, (assignment) => assignment.userType, {
+	@OneToMany(() => UserTypePrivilege, (userTypePrivilege) => userTypePrivilege.userType, {
 		lazy: true,
 	})
-	assignments: Promise<UserTypePrivilegeAssignment[]>;
-	__assignments__?: UserTypePrivilegeAssignment[];
+	userTypePrivileges: Promise<UserTypePrivilege[]>;
+	__userTypePrivileges__?: UserTypePrivilege[];
 }

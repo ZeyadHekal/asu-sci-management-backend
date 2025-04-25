@@ -46,8 +46,8 @@ export class EventSchedule extends ManagementEntity {
 	assisstant: Promise<User[]>;
 }
 
-@Entity('student_event_schedules_assignments')
-export class StudentEventScheduleAssignment extends OmitType(ManagementEntity, ['id']) {
+@Entity('student_event_schedules')
+export class StudentEventSchedule extends OmitType(ManagementEntity, ['id']) {
 
 	@PrimaryColumn({ type: 'string' })
 	eventSchedule_id: UUID;
@@ -69,7 +69,7 @@ export class StudentEventScheduleAssignment extends OmitType(ManagementEntity, [
 	eventSchedule: Promise<EventSchedule>;
 	__eventSchedule__?: EventSchedule;
 
-	@ManyToOne(() => User, (ut) => ut.assignments, { lazy: true })
+	@ManyToOne(() => User, (ut) => ut.userPrivileges, { lazy: true })
 	@JoinColumn({ name: 'student_id' })
 	student: Promise<Device>;
 	__student__?: Device;

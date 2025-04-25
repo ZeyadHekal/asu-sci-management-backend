@@ -4,7 +4,7 @@ import { EntityName, entityNameToEntityClass } from './entity-map';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { User } from 'src/database/users/user.entity';
 import { UUID } from 'crypto';
-import { Privilege, UserPrivilegeAssignment, UserTypePrivilegeAssignment } from 'src/database/privileges/privilege.entity';
+import { Privilege, UserPrivilege, UserTypePrivilege } from 'src/database/privileges/privilege.entity';
 import { PrivilegeCode } from './definition';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserType } from 'src/database/users/user-type.entity';
@@ -15,8 +15,8 @@ import { transformToInstance } from 'src/base/transformToInstance';
 export class PrivilegeService {
 	constructor(
 		private dataSource: DataSource,
-		@InjectRepository(UserPrivilegeAssignment) private readonly userPrivAssignmentsRepo: Repository<UserPrivilegeAssignment>,
-		@InjectRepository(UserTypePrivilegeAssignment) private readonly userTypePrivAssignmentsRepo: Repository<UserTypePrivilegeAssignment>,
+		@InjectRepository(UserPrivilege) private readonly userPrivAssignmentsRepo: Repository<UserPrivilege>,
+		@InjectRepository(UserTypePrivilege) private readonly userTypePrivAssignmentsRepo: Repository<UserTypePrivilege>,
 		@InjectRepository(UserType) private readonly userTypeRepo: Repository<UserType>,
 		@InjectRepository(User) private readonly userRepo: Repository<User>,
 		@InjectRepository(Privilege) private readonly privilegesRepo: Repository<Privilege>,
@@ -33,7 +33,7 @@ export class PrivilegeService {
 			throw new BadRequestException('User or privilege not found');
 		}
 
-		const assignment = new UserPrivilegeAssignment();
+		const assignment = new UserPrivilege();
 		assignment.user_id = user.id;
 		assignment.privilege_id = privilege.id;
 		assignment.resourceIds = resourceIds || null;
@@ -47,7 +47,7 @@ export class PrivilegeService {
 			throw new BadRequestException('User type or privilege not found');
 		}
 
-		const assignment = new UserTypePrivilegeAssignment();
+		const assignment = new UserTypePrivilege();
 		assignment.user_type_id = userType.id;
 		assignment.privilege_id = privilege.id;
 		assignment.resourceIds = resourceIds || null;

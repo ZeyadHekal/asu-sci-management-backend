@@ -48,8 +48,8 @@ export class Course extends ManagementEntity {
 	softwares: Promise<Software[]>;
 }
 
-@Entity('doctor_courses_assignments')
-export class DoctorCourseAssignment extends OmitType(ManagementEntity, ['id']) {
+@Entity('doctor_courses')
+export class DoctorCourse extends OmitType(ManagementEntity, ['id']) {
 
 	@PrimaryColumn({ type: 'string' })
 	doctor_id: UUID;
@@ -62,14 +62,14 @@ export class DoctorCourseAssignment extends OmitType(ManagementEntity, ['id']) {
 	course: Promise<Course>;
 	__course__?: Course;
 
-	@ManyToOne(() => User, (ut) => ut.assignments, { lazy: true })
+	@ManyToOne(() => User, (ut) => ut.userPrivileges, { lazy: true })
 	@JoinColumn({ name: 'doctor_id' })
 	doctor: Promise<User>;
 	__doctor__?: User;
 }
 
-@Entity('student_courses_assignments')
-export class StudentCourseAssignment extends OmitType(ManagementEntity, ['id']) {
+@Entity('student_courses')
+export class StudentCourse extends OmitType(ManagementEntity, ['id']) {
 
 	@PrimaryColumn({ type: 'string' })
 	student_id: UUID;
@@ -82,14 +82,14 @@ export class StudentCourseAssignment extends OmitType(ManagementEntity, ['id']) 
 	course: Promise<Course>;
 	__course__?: Course;
 
-	@ManyToOne(() => User, (ut) => ut.assignments, { lazy: true })
+	@ManyToOne(() => User, (ut) => ut.userPrivileges, { lazy: true })
 	@JoinColumn({ name: 'student_id' })
 	student: Promise<User>;
 	__student__?: User;
 }
 
-@Entity('software_courses_assignments')
-export class SoftwareCourseAssignment extends OmitType(ManagementEntity, ['id']) {
+@Entity('software_courses')
+export class SoftwareCourse extends OmitType(ManagementEntity, ['id']) {
 
 	@PrimaryColumn({ type: 'string' })
 	software_id: UUID;
@@ -102,7 +102,7 @@ export class SoftwareCourseAssignment extends OmitType(ManagementEntity, ['id'])
 	course: Promise<Course>;
 	__course__?: Course;
 
-	@ManyToOne(() => Software, (ut) => ut.assignments, { lazy: true })
+	@ManyToOne(() => Software, (ut) => ut.softwareCourses, { lazy: true })
 	@JoinColumn({ name: 'software_id' })
 	software: Promise<Software>;
 	__software__?: Software;

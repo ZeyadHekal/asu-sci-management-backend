@@ -37,7 +37,7 @@ export class Device extends ManagementEntity {
 	@OneToMany(() => DeviceReport, (report) => report.device, { lazy: true, onDelete: 'RESTRICT', onUpdate: 'CASCADE' })
 	deviceReports: Promise<DeviceReport[]>;
 
-	assignments: Promise<DeviceSoftwares[]>;
-	__assignments__?: DeviceSoftwares[];
+	deviceSoftwares: Promise<DeviceSoftwares[]>;
+	__deviceSoftwares__?: DeviceSoftwares[];
 }
 

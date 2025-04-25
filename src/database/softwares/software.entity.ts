@@ -1,7 +1,7 @@
 import { Entity, Column, ManyToMany, JoinTable, PrimaryColumn, JoinColumn, ManyToOne } from 'typeorm';
 import { ManagementEntity } from 'src/base/base.entity';
 import { Expose } from 'class-transformer';
-import { Course, SoftwareCourseAssignment } from '../courses/course.entity';
+import { Course, SoftwareCourse } from '../courses/course.entity';
 import { OmitType } from '@nestjs/swagger';
 import { UUID } from 'crypto';
 import { Privilege } from '../privileges/privilege.entity';
@@ -29,6 +29,6 @@ export class Software extends ManagementEntity {
 	@JoinTable({ name: 'course_softwares' })
 	courses: Promise<Course[]>;
 
-	assignments: Promise<SoftwareCourseAssignment[]>;
-	__assignments__?: SoftwareCourseAssignment[];
+	softwareCourses: Promise<SoftwareCourse[]>;
+	__softwareCourses__?: SoftwareCourse[];
 }

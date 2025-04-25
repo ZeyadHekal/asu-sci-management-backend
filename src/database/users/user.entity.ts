@@ -1,5 +1,5 @@
 import { Entity, Column, ManyToOne, ManyToMany, JoinTable, JoinColumn, OneToMany } from 'typeorm';
-import { Privilege, UserPrivilegeAssignment } from 'src/database/privileges/privilege.entity';
+import { Privilege, UserPrivilege } from 'src/database/privileges/privilege.entity';
 import { UserType } from './user-type.entity';
 import { ManagementEntity } from 'src/base/base.entity';
 import { Expose } from 'class-transformer';
@@ -30,11 +30,11 @@ export class User extends ManagementEntity {
 	@JoinColumn({ name: 'user_type_id' })
 	userType: Promise<UserType>;
 
-	@OneToMany(() => UserPrivilegeAssignment, (assignment) => assignment.user, {
+	@OneToMany(() => UserPrivilege, (userPrivilege) => userPrivilege.user, {
 		cascade: true,
 		lazy: true,
 	})
-	assignments: Promise<UserPrivilegeAssignment[]>;
+	userPrivileges: Promise<UserPrivilege[]>;
 
 	@ManyToMany(() => Course, (course) => course.users, {
 		cascade: true,
@@ -51,7 +51,7 @@ export class User extends ManagementEntity {
 		const privilegeMap: Record<string, { resourceIds: UUID[] | null; paramKey: string | null; requiresResource: boolean; entityName: EntityName | null }> =
 			{};
 		const userType = await this.userType;
-		const userTypePrivileges = await userType.assignments;
+		const userTypePrivileges = await userType.userTypePrivileges;
 		// Combine userType privileges
 		for (const utp of userTypePrivileges) {
 			const privilege = await utp.privilege;
@@ -64,7 +64,7 @@ export class User extends ManagementEntity {
 		}
 
 		// Combine user-specific privileges (override or add resources)
-		for (const up of await this.assignments) {
+		for (const up of await this.userPrivileges) {
 			const privilege = await up.privilege;
 			if (!privilegeMap[privilege.code]) {
 				privilegeMap[privilege.code] = {

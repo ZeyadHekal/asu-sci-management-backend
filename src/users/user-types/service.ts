@@ -7,14 +7,14 @@ import { BaseService } from 'src/base/base.service';
 import { UUID } from 'crypto';
 import { transformToInstance } from 'src/base/transformToInstance';
 import { PrivilegeAssignmentDto } from 'src/privileges/dtos';
-import { Privilege, UserTypePrivilegeAssignment } from 'src/database/privileges/privilege.entity';
+import { Privilege, UserTypePrivilege } from 'src/database/privileges/privilege.entity';
 
 @Injectable()
 export class UserTypeService extends BaseService<UserType, CreateUserTypeDto, UpdateUserTypeDto, UserTypeDto, UserTypeDto> {
 
 	constructor(@InjectRepository(UserType) private readonly userTypeRepository: Repository<UserType>,
 		@InjectRepository(Privilege) private readonly privilegeRepository: Repository<Privilege>,
-		@InjectRepository(UserTypePrivilegeAssignment) private readonly userTypePrivAssignmentsRepo: Repository<UserTypePrivilegeAssignment>
+		@InjectRepository(UserTypePrivilege) private readonly userTypePrivAssignmentsRepo: Repository<UserTypePrivilege>
 	) {
 		super(UserType, CreateUserTypeDto, UpdateUserTypeDto, UserTypeDto, UserTypeDto, userTypeRepository);
 	}
@@ -29,7 +29,7 @@ export class UserTypeService extends BaseService<UserType, CreateUserTypeDto, Up
 			if (!privilege) {
 				throw new BadRequestException("Couldn't find privilege with code " + assignment.privilegeCode);
 			}
-			const assignmentEntity = new UserTypePrivilegeAssignment();
+			const assignmentEntity = new UserTypePrivilege();
 			assignmentEntity.privilege_id = privilege.id;
 			assignmentEntity.resourceIds = assignment.resourceIds;
 			privilegeAssignments.push(assignmentEntity);
@@ -42,7 +42,7 @@ export class UserTypeService extends BaseService<UserType, CreateUserTypeDto, Up
 			await this.userTypePrivAssignmentsRepo.save(privilegeAssignments[i]);
 		}
 		const entity = await this.userTypeRepository.findOne({ where: { id } });
-		entityToCreate.assignments = Promise.resolve(privilegeAssignments);
+		entityToCreate.userTypePrivileges = Promise.resolve(privilegeAssignments);
 		return this.mapEntityToGetDto(entity);
 	}
 
@@ -51,7 +51,7 @@ export class UserTypeService extends BaseService<UserType, CreateUserTypeDto, Up
 		if (!userType) {
 			throw new NotFoundException();
 		}
-		return userType.__assignments__.map(obj => transformToInstance(PrivilegeAssignmentDto, { ...obj.__privilege__, resourceIds: obj.resourceIds }));
+		return userType.__userTypePrivileges__.map(obj => transformToInstance(PrivilegeAssignmentDto, { ...obj.__privilege__, resourceIds: obj.resourceIds }));
 	}
 
 	async findAllWithPrivileges() {
@@ -59,7 +59,7 @@ export class UserTypeService extends BaseService<UserType, CreateUserTypeDto, Up
 		const results = [] as UserTypeWithPrivilegeDto[];
 		for (const userType of userTypes) {
 			const result = transformToInstance(UserTypeWithPrivilegeDto, userType);
-			result.privileges = userType.__assignments__.map(obj => transformToInstance(PrivilegeAssignmentDto, { ...obj.__privilege__, resourceIds: obj.resourceIds }));
+			result.privileges = userType.__userTypePrivileges__.map(obj => transformToInstance(PrivilegeAssignmentDto, { ...obj.__privilege__, resourceIds: obj.resourceIds }));
 			results.push(result);
 		}
 		return results;
