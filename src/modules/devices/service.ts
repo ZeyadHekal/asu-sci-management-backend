@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import * as imports from './imports';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -7,11 +7,16 @@ import { BaseService } from 'src/base/base.service';
 import { Lab } from 'src/database/labs/lab.entity';
 import { UserType } from 'src/database/users/user-type.entity';
 import { User } from 'src/database/users/user.entity';
+import { UUID } from './imports';
+import { transformToInstance } from 'src/base/transformToInstance';
+import { DeviceSoftwarePagedDto } from '../softwares/dtos';
+import { Device } from 'src/database/devices/device.entity';
 
 @Injectable()
 export class DeviceService extends BaseService<imports.Entity, imports.CreateDto, imports.UpdateDto, imports.GetDto, imports.GetListDto> {
 	constructor(
 		private readonly configService: ConfigService,
+		@InjectRepository(Device) private readonly deviceRepository: Repository<Device>,
 		@InjectRepository(imports.Entity) protected readonly repository: Repository<imports.Entity>,
 		@InjectRepository(Lab) private readonly labRepository: Repository<Lab>,
 		@InjectRepository(User) private readonly userRepository: Repository<User>,
@@ -45,6 +50,14 @@ export class DeviceService extends BaseService<imports.Entity, imports.CreateDto
 			throw new BadRequestException('Invalid assisstant id!');
 		}
 		return dto;
+	}
+
+	async getSoftwares(id: UUID): Promise<DeviceSoftwarePagedDto[]> {
+		const device = await this.deviceRepository.findOne({ where: { id }, relations: ['assignments', 'assignments.privilege'] });
+		if (!device) {
+			throw new NotFoundException();
+		}
+		return device.__assignments__.map(obj => transformToInstance(DeviceSoftwarePagedDto, { ...obj.__privilege__, resourceIds: obj.resourceIds }));
 	}
 
 }

@@ -6,10 +6,13 @@ import {
 	ApiCreatedResponse, ApiOkResponse,
 	RequirePrivileges, PrivilegeCode,
 } from './imports';
+import { DeviceSoftwareListDto, DeviceSoftwarePagedDto } from '../softwares/dtos';
+import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @RequirePrivileges({ and: [PrivilegeCode.MANAGE_USERS] })
 @Controller(constants.pluralName)
 export class DeviceController extends BaseController<Entity, CreateDto, UpdateDto, GetDto, GetListDto> {
+	deviceService: any;
 	constructor(public readonly service: Service) {
 		super(service, Entity, CreateDto, UpdateDto, GetDto, GetListDto);
 	}
@@ -48,5 +51,11 @@ export class DeviceController extends BaseController<Entity, CreateDto, UpdateDt
 	@ApiOkResponse({ type: DeleteDto })
 	delete(@Param(constants.entity_ids) ids: string): Promise<DeleteDto> {
 		return super.delete(ids);
+	}
+
+	@Get(':id/softwares')
+	@ApiResponse({ type: DeviceSoftwarePagedDto, isArray: true })
+	async getSoftWares(@Param('id') id: UUID): Promise<DeviceSoftwarePagedDto[]> {
+		return this.deviceService.getSoftwares(id);
 	}
 }
