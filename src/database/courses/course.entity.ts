@@ -1,8 +1,12 @@
-import { Entity, Column, ManyToMany, JoinTable } from 'typeorm';
+import { Entity, Column, ManyToMany, JoinTable, PrimaryColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { ManagementEntity } from 'src/base/base.entity';
 import { Expose } from 'class-transformer';
 import { User } from '../users/user.entity';
 import { Software } from '../softwares/software.entity';
+import { OmitType } from '@nestjs/swagger';
+import { UUID } from 'crypto';
+import { Device } from '../devices/device.entity';
+import { Lab } from '../labs/lab.entity';
 
 @Entity('courses')
 export class Course extends ManagementEntity {
@@ -42,4 +46,64 @@ export class Course extends ManagementEntity {
 	})
 	@JoinTable({ name: 'course_softwares' })
 	softwares: Promise<Software[]>;
+}
+
+@Entity('doctor_courses_assignments')
+export class DoctorCourseAssignment extends OmitType(ManagementEntity, ['id']) {
+
+	@PrimaryColumn({ type: 'string' })
+	doctor_id: UUID;
+
+	@PrimaryColumn({ type: 'string' })
+	course_id: UUID;
+
+	@ManyToOne(() => Course, { lazy: true })
+	@JoinColumn({ name: 'course_id' })
+	course: Promise<Course>;
+	__course__?: Course;
+
+	@ManyToOne(() => User, (ut) => ut.assignments, { lazy: true })
+	@JoinColumn({ name: 'doctor_id' })
+	doctor: Promise<User>;
+	__doctor__?: User;
+}
+
+@Entity('student_courses_assignments')
+export class StudentCourseAssignment extends OmitType(ManagementEntity, ['id']) {
+
+	@PrimaryColumn({ type: 'string' })
+	student_id: UUID;
+
+	@PrimaryColumn({ type: 'string' })
+	course_id: UUID;
+
+	@ManyToOne(() => Course, { lazy: true })
+	@JoinColumn({ name: 'course_id' })
+	course: Promise<Course>;
+	__course__?: Course;
+
+	@ManyToOne(() => User, (ut) => ut.assignments, { lazy: true })
+	@JoinColumn({ name: 'student_id' })
+	student: Promise<User>;
+	__student__?: User;
+}
+
+@Entity('software_courses_assignments')
+export class SoftwareCourseAssignment extends OmitType(ManagementEntity, ['id']) {
+
+	@PrimaryColumn({ type: 'string' })
+	software_id: UUID;
+
+	@PrimaryColumn({ type: 'string' })
+	course_id: UUID;
+
+	@ManyToOne(() => User, { lazy: true })
+	@JoinColumn({ name: 'course_id' })
+	course: Promise<Course>;
+	__course__?: Course;
+
+	@ManyToOne(() => Software, (ut) => ut.assignments, { lazy: true })
+	@JoinColumn({ name: 'software_id' })
+	software: Promise<Software>;
+	__software__?: Software;
 }

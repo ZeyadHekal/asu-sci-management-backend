@@ -19,7 +19,7 @@ export class DeviceSoftwares extends OmitType(ManagementEntity, ['id']) {
 
 	@Column()
 	@Expose()
-	hassIssue: boolean;
+	hasIssue: boolean;
 
 	@Column({ name: 'device_report_id' })
 	@Expose()

@@ -1,10 +1,13 @@
-import { Entity, Column, ManyToOne, JoinColumn, ManyToMany, JoinTable } from 'typeorm';
+import { Entity, Column, ManyToOne, JoinColumn, ManyToMany, JoinTable, PrimaryColumn } from 'typeorm';
 import { Expose } from 'class-transformer';
 import { UUID } from 'crypto';
 import { ManagementEntity } from 'src/base/base.entity';
 import { Lab } from '../labs/lab.entity';
 import { Event } from './event.entity';
 import { User } from '../users/user.entity';
+import { OmitType } from '@nestjs/swagger';
+import { Device } from '../devices/device.entity';
+import { Software } from '../softwares/software.entity';
 
 @Entity('event_schedules')
 export class EventSchedule extends ManagementEntity {
@@ -41,4 +44,33 @@ export class EventSchedule extends ManagementEntity {
 	})
 	@JoinTable({ name: 'event_schedules_assisstance' })
 	assisstant: Promise<User[]>;
+}
+
+@Entity('student_event_schedules_assignments')
+export class StudentEventScheduleAssignment extends OmitType(ManagementEntity, ['id']) {
+
+	@PrimaryColumn({ type: 'string' })
+	eventSchedule_id: UUID;
+
+	@PrimaryColumn({ type: 'string' })
+	student_id: UUID;
+
+	@Column({ nullable: true })
+	hasAttended: Boolean;
+
+	@Column({ nullable: true })
+	examModel: String;
+
+	@Column({ nullable: true })
+	seatNo: String;
+
+	@ManyToOne(() => EventSchedule, { lazy: true })
+	@JoinColumn({ name: 'eventSchedule_id' })
+	eventSchedule: Promise<EventSchedule>;
+	__eventSchedule__?: EventSchedule;
+
+	@ManyToOne(() => User, (ut) => ut.assignments, { lazy: true })
+	@JoinColumn({ name: 'student_id' })
+	student: Promise<Device>;
+	__student__?: Device;
 }
