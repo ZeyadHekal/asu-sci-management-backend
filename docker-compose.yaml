@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  # NestJS Backend Service
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: zeyad-asu-api
+    restart: always
+    ports:
+      - "${PORT:-3001}:${PORT:-3001}"
+    env_file: .env
+    volumes:
+      - /app/node_modules
+
+  # Database Backup Service
+  db-backup:
+    # image: arm64v8/phpmyadmin
+    image: phpmyadmin/phpmyadmin
+    container_name: zeyad-asu-db-backup
+    restart: always
+    volumes:
+      - zeyad_asu_db_backups:/backup
+    environment:
+      - MYSQL_HOST=${DB_HOST:-db}
+      - MYSQL_USER=${DB_USERNAME:-root}
+      - MYSQL_PASS=${DB_PASSWORD:-root}
+      - MYSQL_DATABASE=${DB_NAME:-management_system}
+      - MYSQL_PORT=${DB_PORT:-3306}
+      - MAX_BACKUPS=4
+      - CRON_TIME=0 0 * * *  # Daily at midnight
+      - INIT_BACKUP=1  # Create a backup when the container starts
+
+volumes:
+  zeyad_asu_db_backups:

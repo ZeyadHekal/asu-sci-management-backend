@@ -1,0 +1,23 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Create .env File
+        run: echo "APP_ENV=${{ vars.APP_ENV }}" > .env
+
+      - name: Stop Current Containers
+        run: docker-compose down
+
+      - name: Rebuild and Restart Containers
+        run: docker-compose up -d --build
