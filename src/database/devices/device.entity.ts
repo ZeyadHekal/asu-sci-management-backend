@@ -6,6 +6,7 @@ import { Lab } from '../labs/lab.entity';
 import { User } from '../users/user.entity';
 import { DeviceReport } from './devices_reports.entity';
 import { report } from 'process';
+import { DeviceSoftwareAssignment } from '../softwares/software.entity';
 
 @Entity('devices')
 export class Device extends ManagementEntity {
@@ -35,5 +36,8 @@ export class Device extends ManagementEntity {
 
 	@OneToMany(() => DeviceReport, (report) => report.device, { lazy: true, onDelete: 'RESTRICT', onUpdate: 'CASCADE' })
 	deviceReports: Promise<DeviceReport[]>;
+
+	assignments: Promise<DeviceSoftwareAssignment[]>;
+	__assignments__?: DeviceSoftwareAssignment[];
 }
 

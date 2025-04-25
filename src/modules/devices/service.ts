@@ -53,11 +53,11 @@ export class DeviceService extends BaseService<imports.Entity, imports.CreateDto
 	}
 
 	async getSoftwares(id: UUID): Promise<DeviceSoftwarePagedDto[]> {
-		const device = await this.deviceRepository.findOne({ where: { id }, relations: ['assignments', 'assignments.privilege'] });
+		const device = await this.deviceRepository.findOne({ where: { id }, relations: ['assignments', 'assignments.software'] });
 		if (!device) {
 			throw new NotFoundException();
 		}
-		return device.__assignments__.map(obj => transformToInstance(DeviceSoftwarePagedDto, { ...obj.__privilege__, resourceIds: obj.resourceIds }));
+		return device.__assignments__.map(obj => transformToInstance(DeviceSoftwarePagedDto, { ...obj.__software__, hasIssues: obj.hasIssues }));
 	}
 
 }
