@@ -12,7 +12,6 @@ import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 @RequirePrivileges({ and: [PrivilegeCode.MANAGE_USERS] })
 @Controller(constants.pluralName)
 export class DeviceController extends BaseController<Entity, CreateDto, UpdateDto, GetDto, GetListDto> {
-	deviceService: any;
 	constructor(public readonly service: Service) {
 		super(service, Entity, CreateDto, UpdateDto, GetDto, GetListDto);
 	}
@@ -57,7 +56,7 @@ export class DeviceController extends BaseController<Entity, CreateDto, UpdateDt
 	@Get(':id/softwares')
 	@ApiResponse({ type: DeviceSoftwarePagedDto, isArray: true })
 	async getSoftWares(@Param('id') id: UUID): Promise<DeviceSoftwarePagedDto[]> {
-		return this.deviceService.getSoftwares(id);
+		return this.service.getSoftwares(id);
 	}
 
 	// Add a new software to that device
