@@ -9,14 +9,12 @@ import { UserType } from 'src/database/users/user-type.entity';
 import { User } from 'src/database/users/user.entity';
 import { UUID } from './imports';
 import { transformToInstance } from 'src/base/transformToInstance';
-import { DeviceSoftwarePagedDto } from '../softwares/dtos';
-import { Device } from 'src/database/devices/device.entity';
+import { DeviceSoftwareListDto, DeviceSoftwarePagedDto } from '../softwares/dtos';
 
 @Injectable()
 export class DeviceService extends BaseService<imports.Entity, imports.CreateDto, imports.UpdateDto, imports.GetDto, imports.GetListDto> {
 	constructor(
 		private readonly configService: ConfigService,
-		@InjectRepository(Device) private readonly deviceRepository: Repository<Device>,
 		@InjectRepository(imports.Entity) protected readonly repository: Repository<imports.Entity>,
 		@InjectRepository(Lab) private readonly labRepository: Repository<Lab>,
 		@InjectRepository(User) private readonly userRepository: Repository<User>,
@@ -52,12 +50,37 @@ export class DeviceService extends BaseService<imports.Entity, imports.CreateDto
 		return dto;
 	}
 
-	async getSoftwares(id: UUID): Promise<DeviceSoftwarePagedDto[]> {
-		const device = await this.deviceRepository.findOne({ where: { id }, relations: ['assignments', 'assignments.software'] });
-		if (!device) {
+	async getSoftwares(id: UUID, pagination: imports.PaginationInput): Promise<DeviceSoftwarePagedDto> {
+		const { page, limit } = pagination;
+		const skip = (page - 1) * limit;
+
+		// Check if device exists
+		const deviceExists = await this.repository.findOne({ where: { id } });
+		if (!deviceExists) {
 			throw new NotFoundException();
 		}
-		return device.__assignments__.map(obj => transformToInstance(DeviceSoftwarePagedDto, { ...obj.__software__, hasIssues: obj.hasIssues }));
-	}
 
+		// Query for softwares with pagination
+		// TODO: Change repository with 
+		const query1 = await this.repository
+			.createQueryBuilder('deviceSoftware')
+			.leftJoin('deviceSoftware.software', 'software')
+			.where('deviceSoftware.deviceId = :deviceId', { deviceId: id })
+			.skip(skip)
+			.take(limit)
+		const total = await query1.getCount();
+		const deviceSoftwares = await query1.getRawMany();
+
+		// Transform to DTOs
+		const items = deviceSoftwares.map((devSoft: any) =>
+			transformToInstance(DeviceSoftwareListDto, {
+				id: devSoft.software.id,
+				name: devSoft.software.id,
+				hasIssues: devSoft.hasIssues
+			})
+		);
+
+		// Return paginated results
+		return { total, items };
+	}
 }

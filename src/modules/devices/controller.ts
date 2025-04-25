@@ -55,8 +55,8 @@ export class DeviceController extends BaseController<Entity, CreateDto, UpdateDt
 	// List all softwares for that device
 	@Get(':id/softwares')
 	@ApiResponse({ type: DeviceSoftwarePagedDto, isArray: true })
-	async getSoftWares(@Param('id') id: UUID): Promise<DeviceSoftwarePagedDto[]> {
-		return this.service.getSoftwares(id);
+	async getSoftwares(@Param('id') id: UUID, @Query() input: PaginationInput): Promise<DeviceSoftwarePagedDto> {
+		return this.service.getSoftwares(id, input);
 	}
 
 	// Add a new software to that device
