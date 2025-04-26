@@ -30,10 +30,10 @@ export { LabSession as Entity };
 export { LabSessionService as Service } from './service';
 
 export const constants = {
-    singularName: 'lab-session',
-    pluralName: 'lab-sessions',
-    entity_id: 'lab-session_id',
-    entity_ids: 'lab-session_ids',
+    singularName: 'labSession',
+    pluralName: 'labSessions',
+    entity_id: 'lab_session_id',
+    entity_ids: 'lab_session_ids',
 };
 
 /**********************/
