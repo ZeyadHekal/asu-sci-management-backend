@@ -32,19 +32,19 @@ export class EventController extends BaseController<Entity, CreateDto, UpdateDto
 		return super.getPaginated(input);
 	}
 
-	@Get(constants.entity_id)
+	@Get(':' + constants.entity_id)
 	@ApiOkResponse({ type: GetDto })
 	getById(@Param(constants.entity_id) id: UUID): Promise<GetDto> {
 		return super.getById(id);
 	}
 
-	@Patch(constants.entity_id)
+	@Patch(':' + constants.entity_id)
 	@ApiOkResponse({ type: GetDto })
 	update(@Param(constants.entity_id) id: UUID, @Body() updateDto: UpdateDto): Promise<GetDto> {
 		return super.update(id, updateDto);
 	}
 
-	@Delete(constants.entity_ids)
+	@Delete(':' + constants.entity_ids)
 	@ApiOkResponse({ type: DeleteDto })
 	delete(@Param(constants.entity_ids) ids: string): Promise<DeleteDto> {
 		return super.delete(ids);

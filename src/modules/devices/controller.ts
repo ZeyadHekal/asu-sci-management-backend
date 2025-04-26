@@ -34,26 +34,26 @@ export class DeviceController extends BaseController<Entity, CreateDto, UpdateDt
 		return super.getPaginated(input);
 	}
 
-	@Get(constants.entity_id)
+	@Get(':' + constants.entity_id)
 	@ApiOkResponse({ type: GetDto })
 	getById(@Param(constants.entity_id) id: UUID): Promise<GetDto> {
 		return super.getById(id);
 	}
 
-	@Patch(constants.entity_id)
+	@Patch(':' + constants.entity_id)
 	@ApiOkResponse({ type: GetDto })
 	update(@Param(constants.entity_id) id: UUID, @Body() updateDto: UpdateDto): Promise<GetDto> {
 		return super.update(id, updateDto);
 	}
 
-	@Delete(constants.entity_ids)
+	@Delete(':' + constants.entity_ids)
 	@ApiOkResponse({ type: DeleteDto })
 	delete(@Param(constants.entity_ids) ids: string): Promise<DeleteDto> {
 		return super.delete(ids);
 	}
 
 	// List all softwares for that device
-	@Get(':id/softwares')
+	@Get(`:${constants.entity_id}/softwares`)
 	@ApiResponse({ type: DeviceSoftwarePagedDto, isArray: true })
 	async getSoftwares(@Param('id') id: UUID, @Query() input: PaginationInput): Promise<DeviceSoftwarePagedDto> {
 		return this.service.getSoftwares(id, input);
