@@ -30,8 +30,8 @@ export { Device as Entity };
 export { DeviceService as Service } from './service';
 
 export const constants = {
-    singularName: 'device',
-    pluralName: 'devices',
+    singular_name: 'device',
+    plural_name: 'devices',
     entity_id: 'device_id',
     entity_ids: 'device_ids',
 };

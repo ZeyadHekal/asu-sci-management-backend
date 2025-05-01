@@ -29,8 +29,8 @@ export { Course as Entity };
 export { CourseService as Service } from './service';
 
 export const constants = {
-    singularName: 'course',
-    pluralName: 'courses',
+    singular_name: 'course',
+    plural_name: 'courses',
     entity_id: 'course_id',
     entity_ids: 'course_ids',
 };

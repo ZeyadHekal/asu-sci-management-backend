@@ -27,8 +27,8 @@ export { Lab as Entity };
 export { LabService as Service } from './service';
 
 export const constants = {
-    singularName: 'lab',
-    pluralName: 'labs',
+    singular_name: 'lab',
+    plural_name: 'labs',
     entity_id: 'lab_id',
     entity_ids: 'lab_ids',
 };

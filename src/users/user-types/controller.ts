@@ -18,44 +18,44 @@ export class UserTypeController extends BaseController<UserType, CreateUserTypeD
 	}
 
 	@Post()
-	@ApiResponse({ type: UserTypeDto })
+	@ApiResponse({ type: UserTypeDto, status: 201 })
 	create(@Body() createUserDto: CreateUserTypeDto) {
 		return this.userTypeService.create(createUserDto);
 	}
 
 	@Get()
 	@RequirePrivileges({ or: [PrivilegeCode.MANAGE_USER_TYPES, PrivilegeCode.MANAGE_USERS] })
-	@ApiResponse({ type: UserTypeDto, isArray: true })
+	@ApiResponse({ type: UserTypeDto, isArray: true, status: 200 })
 	findAll() {
 		return this.getAll();
 	}
 
 	@Get('with-privileges')
-	@ApiResponse({ type: UserTypeWithPrivilegeDto, isArray: true })
+	@ApiResponse({ type: UserTypeWithPrivilegeDto, isArray: true, status: 200 })
 	findAllWithPrivileges() {
 		return this.userTypeService.findAllWithPrivileges();
 	}
 
 	@Get(':id')
-	@ApiResponse({ type: UserTypeDto })
+	@ApiResponse({ type: UserTypeDto, status: 200 })
 	getById(@Param('id') id: UUID) {
 		return super.getById(id);
 	}
 
 	@Get(':id/privileges')
-	@ApiResponse({ type: PrivilegeAssignmentDto, isArray: true })
+	@ApiResponse({ type: PrivilegeAssignmentDto, isArray: true, status: 200 })
 	async getPrivileges(@Param('id') id: UUID): Promise<PrivilegeAssignmentDto[]> {
 		return this.userTypeService.getPrivileges(id);
 	}
 
 	@Patch(':id')
-	@ApiResponse({ type: UserTypeDto })
+	@ApiResponse({ type: UserTypeDto, status: 200 })
 	update(@Param('id') id: UUID, @Body() updateUserDto: UpdateUserTypeDto) {
 		return super.update(id, updateUserDto);
 	}
 
 	@Delete(':ids')
-	@ApiResponse({ type: DeleteDto })
+	@ApiResponse({ type: DeleteDto, status: 200 })
 	delete(@Param('ids') ids: UUID) {
 		return super.delete(ids);
 	}

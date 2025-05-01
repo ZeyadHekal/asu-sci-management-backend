@@ -11,20 +11,20 @@ export class AuthController {
 
 	@Public()
 	@Post('login')
-	@ApiResponse({ type: LoginSuccessDto })
+	@ApiResponse({ type: LoginSuccessDto, status: 201 })
 	async login(@Body() body: LoginRequestDto): Promise<LoginSuccessDto> {
 		return this.authService.login(body.username, body.password);
 	}
 
 	@Public()
 	@Post('refresh')
-	@ApiResponse({ type: AuthJwtDto })
+	@ApiResponse({ type: AuthJwtDto, status: 201 })
 	async refreshToken(@Body() body: RefreshRequsetDto): Promise<AuthJwtDto> {
 		return this.authService.refreshTokens(body.refreshToken);
 	}
 
 	@Post('privileges')
-	@ApiResponse({ type: PrivilegRefreshDto })
+	@ApiResponse({ type: PrivilegRefreshDto, status: 201 })
 	async refreshPrivilege(@CurrentUser() user: User): Promise<PrivilegRefreshDto> {
 		return this.authService.getPrivileges(user);
 	}

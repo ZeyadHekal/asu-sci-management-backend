@@ -30,8 +30,8 @@ export { Software as Entity };
 export { SoftwareService as Service } from './service';
 
 export const constants = {
-    singularName: 'software',
-    pluralName: 'softwares',
+    singular_name: 'software',
+    plural_name: 'softwares',
     entity_id: 'software_id',
     entity_ids: 'software_ids',
 };

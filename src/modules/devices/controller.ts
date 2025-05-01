@@ -9,7 +9,7 @@ import {
 import { DeviceSoftwarePagedDto } from '../softwares/dtos';
 
 @RequirePrivileges({ and: [PrivilegeCode.MANAGE_USERS] })
-@Controller(constants.pluralName)
+	@Controller(constants.plural_name)
 export class DeviceController extends BaseController<Entity, CreateDto, UpdateDto, GetDto, GetListDto> {
 	constructor(public readonly service: Service) {
 		super(service, Entity, CreateDto, UpdateDto, GetDto, GetListDto);

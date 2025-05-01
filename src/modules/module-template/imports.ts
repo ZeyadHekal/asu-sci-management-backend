@@ -30,8 +30,8 @@ export { Template as Entity };
 export { TemplateService as Service } from './service';
 
 export const constants = {
-    singularName: 'template',
-    pluralName: 'templates',
+    singular_name: 'template',
+    plural_name: 'templates',
     entity_id: 'template_id',
     entity_ids: 'template_ids',
 };

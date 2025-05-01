@@ -12,8 +12,8 @@ export { User as Entity } from 'src/database/users/user.entity';
 export { UserService as Service } from './service';
 
 export const constants = {
-    singularName: 'user',
-    pluralName: 'users',
+    singular_name: 'user',
+    plural_name: 'users',
     entity_id: 'user_id',
     entity_ids: 'user_ids',
 };
