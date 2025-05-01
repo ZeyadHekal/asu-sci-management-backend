@@ -1,0 +1,16 @@
+import { Global, Module } from '@nestjs/common';
+import { PrivilegeSeeder } from '../db-seeder/seeders/privilege';
+import { DatabaseSeeder } from './db-seeder.service';
+import { UserTypeSeeder } from './seeders/user-types';
+import { UserSeeder } from './seeders/users';
+
+@Global()
+@Module({
+    providers: [
+        DatabaseSeeder,
+        PrivilegeSeeder,
+        UserTypeSeeder,
+        UserSeeder,
+    ],
+})
+export class DatabaseSeederModule {}

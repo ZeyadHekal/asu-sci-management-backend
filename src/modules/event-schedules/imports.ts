@@ -29,8 +29,8 @@ export { EventSchedule as Entity };
 export { EventScheduleService as Service } from './service';
 
 export const constants = {
-    singularName: 'event_schedule',
-    pluralName: 'event_schedules',
+    singularName: 'eventSchedule',
+    pluralName: 'eventSchedules',
     entity_id: 'event_schedule_id',
     entity_ids: 'event_schedule_ids',
 };

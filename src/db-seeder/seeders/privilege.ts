@@ -1,19 +1,15 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { DataSource } from 'typeorm';
-import { PRIVILEGE_SEED_DATA } from './definition';
+import { Repository } from 'typeorm';
+import { PRIVILEGE_SEED_DATA } from '../../privileges/definition';
 import { Privilege } from 'src/database/privileges/privilege.entity';
+import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
-export class PrivilegeSeeder implements OnModuleInit {
-	constructor(private dataSource: DataSource) { }
+export class PrivilegeSeeder {
+	constructor(@InjectRepository(Privilege) private repo: Repository<Privilege>) { }
 
-	async onModuleInit() {
-		await this.syncPrivileges();
-	}
-
-	private async syncPrivileges() {
-		const repo = this.dataSource.getRepository(Privilege);
-		const existing = await repo.find();
+	public async seed() {
+		const existing = await this.repo.find();
 
 		const definedPrivileges = PRIVILEGE_SEED_DATA.map((p) => p.code);
 		const existingNames = existing.map((e) => e.code);
@@ -21,18 +17,18 @@ export class PrivilegeSeeder implements OnModuleInit {
 		// Add missing privileges
 		const toAdd = PRIVILEGE_SEED_DATA.filter((p) => !existingNames.includes(p.code));
 		if (toAdd.length) {
-			await repo.insert(toAdd);
+			await this.repo.insert(toAdd);
 		}
 
 		// Remove extraneous privileges
 		const toRemove = existing.filter((e) => !definedPrivileges.includes(e.code));
 		if (toRemove.length) {
-			await repo.remove(toRemove);
+			await this.repo.remove(toRemove);
 		}
 
 		// Update changed attributes if needed
 		for (const seedPriv of PRIVILEGE_SEED_DATA) {
-			const dbPrivilege = await repo.findOneBy({ code: seedPriv.code });
+			const dbPrivilege = await this.repo.findOneBy({ code: seedPriv.code });
 			if (dbPrivilege) {
 				let updated = false;
 
@@ -58,7 +54,7 @@ export class PrivilegeSeeder implements OnModuleInit {
 				}
 
 				if (updated) {
-					await repo.save(dbPrivilege);
+					await this.repo.save(dbPrivilege);
 				}
 			}
 		}

@@ -11,6 +11,7 @@ import { LabModule } from './modules/labs/module';
 import { StudentModule } from './modules/students/module';
 import { DeviceModule } from './modules/devices/module';
 import { LabSessionModule } from './modules/lab-session/module';
+import { DatabaseSeederModule } from './db-seeder/db-seeder.module';
 
 
 @Module({
@@ -20,6 +21,7 @@ import { LabSessionModule } from './modules/lab-session/module';
 			envFilePath: ['.env.local', '.env.dev', '.env.stage', '.env.prod', '.env'],
 		}),
 		DatabaseModule,
+		DatabaseSeederModule,
 		UserModule,
 		AuthModule,
 		PrivilegesModule,
