@@ -3,7 +3,7 @@ import {
 	Entity, CreateDto, UpdateDto, GetDto, GetListDto, DeleteDto,
 	PaginationInput, IPaginationOutput, PagedDto,
 	BaseController, Service, constants, UUID,
-	ApiCreatedResponse, ApiOkResponse,
+	ApiResponse,
 	RequirePrivileges, PrivilegeCode,
 } from './imports';
 import { CreateStudentDto } from './dtos';
@@ -16,43 +16,43 @@ export class UserController extends BaseController<Entity, CreateDto, UpdateDto,
 	}
 
 	@Post()
-	@ApiCreatedResponse({ type: GetDto })
+	@ApiResponse({ type: GetDto, status: 201 })
 	create(@Body() createDto: CreateDto): Promise<GetDto> {
 		return super.create(createDto);
 	}
 
 	@Post('create-student')
-	@ApiCreatedResponse({ type: GetDto })
+	@ApiResponse({ type: GetDto, status: 201 })
 	createStudent(@Body() createDto: CreateStudentDto): Promise<GetDto> {
 		return this.service.createStudent(createDto);
 	}
 
 	@Get()
-	@ApiOkResponse({ type: GetListDto })
+	@ApiResponse({ type: GetListDto, status: 200 })
 	getAll(): Promise<GetListDto[]> {
 		return super.getAll();
 	}
 
 	@Get('paginated')
-	@ApiOkResponse({ type: PagedDto })
+	@ApiResponse({ type: PagedDto, status: 200 })
 	getPaginated(@Query() input: PaginationInput): Promise<IPaginationOutput<GetDto | GetListDto>> {
 		return super.getPaginated(input);
 	}
 
 	@Get(':' + constants.entity_id)
-	@ApiOkResponse({ type: GetDto })
+	@ApiResponse({ type: GetDto, status: 200 })
 	getById(@Param(constants.entity_id) id: UUID): Promise<GetDto> {
 		return super.getById(id);
 	}
 
 	@Patch(':' + constants.entity_id)
-	@ApiOkResponse({ type: GetDto })
+	@ApiResponse({ type: GetDto, status: 200 })
 	update(@Param(constants.entity_id) id: UUID, @Body() updateDto: UpdateDto): Promise<GetDto> {
 		return super.update(id, updateDto);
 	}
 
 	@Delete(':' + constants.entity_ids)
-	@ApiOkResponse({ type: DeleteDto })
+	@ApiResponse({ type: DeleteDto, status: 200 })
 	delete(@Param(constants.entity_ids) ids: string): Promise<DeleteDto> {
 		return super.delete(ids);
 	}
