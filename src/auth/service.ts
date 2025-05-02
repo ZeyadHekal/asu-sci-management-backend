@@ -20,7 +20,7 @@ export class AuthService {
 		}
 		// Get privileges
 		const privileges = await user.getUserPrivileges();
-		const tokens = await this.generateTokens(user.id);
+		const tokens = await this.generateTokens(user.id, user.name);
 		return { ...tokens, privileges: Object.keys(privileges) };
 	}
 
@@ -29,16 +29,16 @@ export class AuthService {
 			const payload = await this.jwtService.verifyAsync(token);
 			const user = await this.userRepository.findOneBy({ id: payload.user_id });
 			if (!user || !payload.refresh) throw new UnauthorizedException();
-			return this.generateTokens(payload.user_id);
+			return this.generateTokens(payload.user_id, user.name);
 		} catch (error) {
 			console.log(error);
 			throw new UnauthorizedException();
 		}
 	}
 
-	private async generateTokens(user_id: string): Promise<AuthJwtDto> {
+	private async generateTokens(user_id: string, name: string): Promise<AuthJwtDto> {
 		// TODO: Change on production
-		const accessToken = await this.jwtService.signAsync({ user_id }, { expiresIn: '1y' });
+		const accessToken = await this.jwtService.signAsync({ user_id, name }, { expiresIn: '1y' });
 		const refreshToken = await this.jwtService.signAsync({ user_id, refresh: true }, { expiresIn: '30min' });
 		return { accessToken, refreshToken };
 	}
