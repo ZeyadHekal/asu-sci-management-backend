@@ -20,7 +20,7 @@ import { LabSession } from './lab_sessions/lab_session.entity';
 import { CoursesLabs } from './courses/course_labs.entity';
 import { DeviceReport } from './devices/devices_reports.entity';
 import { Device } from './devices/device.entity';
-import { DeviceSoftwares } from './devices/devices_softwares.entity';
+import { DeviceSoftware } from './devices/devices_softwares.entity';
 
 @Global()
 @Module({
@@ -61,7 +61,7 @@ import { DeviceSoftwares } from './devices/devices_softwares.entity';
 			CoursesLabs,
 			DeviceReport,
 			Device,
-			DeviceSoftwares,
+			DeviceSoftware,
 		]),
 	],
 	exports: [TypeOrmModule],

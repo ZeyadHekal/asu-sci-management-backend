@@ -6,7 +6,7 @@ import { User } from '../users/user.entity';
 import { Device } from './device.entity';
 import { Software } from '../softwares/software.entity';
 
-@Entity('devices')
+@Entity('device_reports')
 export class DeviceReport extends ManagementEntity {
 	@Column()
 	@Expose()

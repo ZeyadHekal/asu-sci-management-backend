@@ -12,6 +12,7 @@ import { StudentModule } from './modules/students/module';
 import { DeviceModule } from './modules/devices/module';
 import { LabSessionModule } from './modules/lab-session/module';
 import { DatabaseSeederModule } from './db-seeder/db-seeder.module';
+import { SoftwareModule } from './modules/softwares/module';
 
 
 @Module({
@@ -31,6 +32,7 @@ import { DatabaseSeederModule } from './db-seeder/db-seeder.module';
 		StudentModule,
 		CourseModule,
 		EventScheduleModule,
+		SoftwareModule,
 		DeviceModule,
 		LabSessionModule,
 	],

@@ -8,14 +8,14 @@ import { Software } from '../softwares/software.entity';
 import { DeviceReport } from './devices_reports.entity';
 
 @Entity('device_softwares')
-export class DeviceSoftwares extends OmitType(ManagementEntity, ['id']) {
+export class DeviceSoftware extends OmitType(ManagementEntity, ['id']) {
 	@PrimaryColumn({ name: 'device_id' })
 	@Expose()
 	deviceId: UUID;
 
-	@PrimaryColumn({ name: 'app_id' })
+	@PrimaryColumn({ name: 'software_id' })
 	@Expose()
-	app_id: UUID;
+	softwareId: UUID;
 
 	@Column()
 	@Expose()
@@ -30,8 +30,8 @@ export class DeviceSoftwares extends OmitType(ManagementEntity, ['id']) {
 	device: Promise<Device>;
 
 	@ManyToOne(() => Software, { nullable: false, lazy: true, onDelete: 'RESTRICT', onUpdate: 'CASCADE' })
-	@JoinColumn({ name: 'app_id' })
-	app: Promise<Software>;
+	@JoinColumn({ name: 'software_id' })
+	software: Promise<Software>;
 
 	@ManyToOne(() => DeviceReport, { nullable: false, lazy: true, onDelete: 'RESTRICT', onUpdate: 'CASCADE' })
 	@JoinColumn({ name: 'device_report_id' })

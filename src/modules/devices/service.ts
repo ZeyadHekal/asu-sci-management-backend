@@ -10,6 +10,7 @@ import { User } from 'src/database/users/user.entity';
 import { UUID } from './imports';
 import { transformToInstance } from 'src/base/transformToInstance';
 import { DeviceSoftwareListDto, DeviceSoftwarePagedDto } from '../softwares/dtos';
+import { DeviceSoftware } from 'src/database/devices/devices_softwares.entity';
 
 @Injectable()
 export class DeviceService extends BaseService<imports.Entity, imports.CreateDto, imports.UpdateDto, imports.GetDto, imports.GetListDto> {
@@ -19,6 +20,7 @@ export class DeviceService extends BaseService<imports.Entity, imports.CreateDto
 		@InjectRepository(Lab) private readonly labRepository: Repository<Lab>,
 		@InjectRepository(User) private readonly userRepository: Repository<User>,
 		@InjectRepository(UserType) private readonly userTypeRepository: Repository<UserType>,
+		@InjectRepository(DeviceSoftware) private readonly deviceSoftwareRepository: Repository<DeviceSoftware>,
 	) {
 		super(imports.Entity, imports.CreateDto, imports.UpdateDto, imports.GetDto, imports.GetListDto, repository);
 	}
@@ -30,7 +32,7 @@ export class DeviceService extends BaseService<imports.Entity, imports.CreateDto
 		}
 		const user = await this.userRepository.findOneBy({ id: dto.assisstantId });
 		if (!user) {
-			throw new BadRequestException('Invalid lab id!');
+			throw new BadRequestException('Invalid assistant id!');
 		}
 		return dto;
 	}
@@ -57,15 +59,14 @@ export class DeviceService extends BaseService<imports.Entity, imports.CreateDto
 		// Check if device exists
 		const deviceExists = await this.repository.findOne({ where: { id } });
 		if (!deviceExists) {
-			throw new NotFoundException();
+			throw new NotFoundException('Device not found!');
 		}
 
 		// Query for softwares with pagination
-		// TODO: Change repository with 
-		const query1 = await this.repository
+		const query1 = await this.deviceSoftwareRepository
 			.createQueryBuilder('deviceSoftware')
+			.where('deviceSoftware.deviceId = :id', { id })
 			.leftJoin('deviceSoftware.software', 'software')
-			.where('deviceSoftware.deviceId = :deviceId', { deviceId: id })
 			.skip(skip)
 			.take(limit)
 		const total = await query1.getCount();
@@ -75,7 +76,7 @@ export class DeviceService extends BaseService<imports.Entity, imports.CreateDto
 		const items = deviceSoftwares.map((devSoft: any) =>
 			transformToInstance(DeviceSoftwareListDto, {
 				id: devSoft.software.id,
-				name: devSoft.software.id,
+				name: devSoft.software.name,
 				hasIssues: devSoft.hasIssues
 			})
 		);
