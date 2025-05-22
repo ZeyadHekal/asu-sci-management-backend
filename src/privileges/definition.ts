@@ -1,13 +1,16 @@
 import { PrivilegeDto } from './dtos';
 
 export enum PrivilegeCode {
-	MANAGE_USER_TYPES = 'MANAGE_USER_TYPES',
+	MANAGE_SYSTEM = 'MANAGE_SYSTEM',
 	MANAGE_USERS = 'MANAGE_USERS',
-	CREATE_STUDENT = 'CREATE_STUDENT',
+	MANAGE_STUDENTS = 'MANAGE_STUDENTS',
+	MANAGE_LABS = 'MANAGE_LABS',
+	LAB_ASSISTANT = 'LAB_ASSISTANT',
 	STUDY_COURSE = 'STUDY_COURSE',
 	TEACH_COURSE = 'TEACH_COURSE',
 	ASSIST_IN_COURSE = 'ASSIST_IN_COURSE',
 	LAB_MAINTENANCE = 'LAB_MAINTENANCE',
+	REPORT_DEVICE = 'REPORT_DEVICE',
 }
 
 /**
@@ -21,8 +24,8 @@ export enum PrivilegeCode {
  */
 export const PRIVILEGE_SEED_DATA: PrivilegeDto[] = [
 	{
-		code: PrivilegeCode.MANAGE_USER_TYPES,
-		friendlyName: 'Manage User Types',
+		code: PrivilegeCode.MANAGE_SYSTEM,
+		friendlyName: 'Manage System',
 		group: 'Admin',
 		requiresResource: false,
 	},
@@ -33,9 +36,21 @@ export const PRIVILEGE_SEED_DATA: PrivilegeDto[] = [
 		requiresResource: false,
 	},
 	{
-		code: PrivilegeCode.CREATE_STUDENT,
-		friendlyName: 'Create Students',
+		code: PrivilegeCode.MANAGE_STUDENTS,
+		friendlyName: 'Manage Students',
 		group: 'Student',
+		requiresResource: false,
+	},
+	{
+		code: PrivilegeCode.MANAGE_LABS,
+		friendlyName: 'Manage Labs',
+		group: 'Labs',
+		requiresResource: false,
+	},
+	{
+		code: PrivilegeCode.LAB_ASSISTANT,
+		friendlyName: 'Lab Assistant',
+		group: 'Labs',
 		requiresResource: false,
 	},
 	{
@@ -60,6 +75,12 @@ export const PRIVILEGE_SEED_DATA: PrivilegeDto[] = [
 		code: PrivilegeCode.LAB_MAINTENANCE,
 		friendlyName: 'Lab Maintenance',
 		group: 'Maintenance',
+		requiresResource: false,
+	},
+	{
+		code: PrivilegeCode.REPORT_DEVICE,
+		friendlyName: 'Report Device',
+		group: 'Student',
 		requiresResource: false,
 	},
 ];

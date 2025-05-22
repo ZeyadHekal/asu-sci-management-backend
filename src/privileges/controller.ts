@@ -16,7 +16,7 @@ export class PrivilegeController {
 	@Get()
 	@ApiOperation({ summary: 'Get all privileges' })
 	@ApiBearerAuth()
-	@RequirePrivileges({ and: [PrivilegeCode.MANAGE_USER_TYPES] })
+	@RequirePrivileges({ and: [PrivilegeCode.MANAGE_SYSTEM] })
 	async getAllPrivileges() {
 		return this.privilegesService.getAllPrivileges();
 	}
@@ -24,7 +24,7 @@ export class PrivilegeController {
 	@Post('assign/user')
 	@ApiOperation({ summary: 'Assign privilege to user', description: 'Assign a specific privilege to a user' })
 	@ApiBearerAuth()
-	@RequirePrivileges({ and: [PrivilegeCode.MANAGE_USER_TYPES] })
+	@RequirePrivileges({ and: [PrivilegeCode.MANAGE_SYSTEM] })
 	async assignPrivilegeToUser(@Body() body: UserAssignPrivilegeDto) {
 		await this.privilegesService.assignPrivilegeToUser(body.userId, body.privilegeCode, body.resourceIds);
 		return { success: true };
@@ -33,7 +33,7 @@ export class PrivilegeController {
 	@Post('assign/usertype')
 	@ApiOperation({ summary: 'Assign privilege to user type', description: 'Assign a specific privilege to a user type' })
 	@ApiBearerAuth()
-	@RequirePrivileges({ and: [PrivilegeCode.MANAGE_USER_TYPES] })
+	@RequirePrivileges({ and: [PrivilegeCode.MANAGE_SYSTEM] })
 	async assignPrivilegeToUserType(@Body() body: UserTypeAssignPrivilegeDto) {
 		await this.privilegesService.assignPrivilegeToUserType(body.userTypeId, body.privilegeCode, body.resourceIds);
 		return { success: true };
@@ -42,7 +42,7 @@ export class PrivilegeController {
 	@Post('unassign/user')
 	@ApiOperation({ summary: 'Unassign privilege from user', description: 'Remove a specific privilege from a user' })
 	@ApiBearerAuth()
-	@RequirePrivileges({ and: [PrivilegeCode.MANAGE_USER_TYPES] })
+	@RequirePrivileges({ and: [PrivilegeCode.MANAGE_SYSTEM] })
 	@ApiResponse({ type: DeleteDto })
 	async unassignPrivilegeFromUser(@Body() body: UserAssignPrivilegeDto) {
 		return this.privilegesService.unassignPrivilegeFromUser(body.userId, body.privilegeCode);
@@ -51,7 +51,7 @@ export class PrivilegeController {
 	@Post('unassign/usertype')
 	@ApiOperation({ summary: 'Unassign privilege from user type', description: 'Remove a specific privilege from a user type' })
 	@ApiBearerAuth()
-	@RequirePrivileges({ and: [PrivilegeCode.MANAGE_USER_TYPES] })
+	@RequirePrivileges({ and: [PrivilegeCode.MANAGE_SYSTEM] })
 	@ApiResponse({ type: DeleteDto })
 	async unassignPrivilegeToUserType(@Body() body: UserTypeAssignPrivilegeDto) {
 		await this.privilegesService.unassignPrivilegeToUserType(body.userTypeId, body.privilegeCode);
@@ -63,7 +63,7 @@ export class PrivilegeController {
 	@ApiParam({ name: 'privilegeCode', enum: PrivilegeCode, description: 'Privilege code to unassign' })
 	@ApiOperation({ summary: 'Unassign privilege from user', description: 'Remove a specific privilege from a user' })
 	@ApiBearerAuth()
-	@RequirePrivileges({ and: [PrivilegeCode.MANAGE_USER_TYPES] })
+	@RequirePrivileges({ and: [PrivilegeCode.MANAGE_SYSTEM] })
 	async unassignPrivilegeFromUserById(
 		@Param('userId') userId: UUID,
 		@Param('privilegeCode') privilegeCode: PrivilegeCode
@@ -76,7 +76,7 @@ export class PrivilegeController {
 	@ApiParam({ name: 'privilegeCode', enum: PrivilegeCode })
 	@ApiOperation({ summary: 'Unassign privilege from user type', description: 'Remove a specific privilege from a user type' })
 	@ApiBearerAuth()
-	@RequirePrivileges({ and: [PrivilegeCode.MANAGE_USER_TYPES] })
+	@RequirePrivileges({ and: [PrivilegeCode.MANAGE_SYSTEM] })
 	async unassignPrivilegeFromUserType(
 		@Param('userTypeId') userTypeId: UUID,
 		@Param('privilegeCode') privilegeCode: PrivilegeCode
@@ -88,7 +88,7 @@ export class PrivilegeController {
 	@ApiParam({ name: 'privilegeCode', enum: PrivilegeCode })
 	@ApiOperation({ summary: 'Get users with a specific privilege' })
 	@ApiBearerAuth()
-	@RequirePrivileges({ and: [PrivilegeCode.MANAGE_USER_TYPES] })
+	@RequirePrivileges({ and: [PrivilegeCode.MANAGE_SYSTEM] })
 	async getUsersByPrivilege(@Param('privilegeCode') privilegeCode: PrivilegeCode): Promise<UserDto[]> {
 		return this.privilegesService.getUsersByPrivilege(privilegeCode);
 	}

@@ -11,7 +11,7 @@ import { DeleteDto } from 'src/base/delete.dto';
 import { PrivilegeAssignmentDto } from 'src/privileges/dtos';
 
 @ApiTags('user-types')
-@RequirePrivileges({ and: [PrivilegeCode.MANAGE_USER_TYPES] })
+	@RequirePrivileges({ and: [PrivilegeCode.MANAGE_SYSTEM] })
 @Controller('user-types')
 export class UserTypeController extends BaseController<UserType, CreateUserTypeDto, UpdateUserTypeDto, UserTypeDto, UserTypeDto> {
 	constructor(private readonly userTypeService: UserTypeService) {
@@ -30,7 +30,7 @@ export class UserTypeController extends BaseController<UserType, CreateUserTypeD
 
 	@Get()
 	@ApiOperation({ summary: 'Get all user types', description: 'Retrieve all user types' })
-	@RequirePrivileges({ or: [PrivilegeCode.MANAGE_USER_TYPES, PrivilegeCode.MANAGE_USERS] })
+	@RequirePrivileges({ or: [PrivilegeCode.MANAGE_SYSTEM, PrivilegeCode.MANAGE_USERS] })
 	@ApiResponse({ type: UserTypeDto, isArray: true, status: 200, description: 'User types retrieved successfully' })
 	@ApiResponse({ status: 401, description: 'Unauthorized' })
 	@ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })

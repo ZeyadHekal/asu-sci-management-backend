@@ -1,7 +1,7 @@
 // privileges.service.ts
 import { DataSource, In, Repository } from 'typeorm';
 import { EntityName, entityNameToEntityClass } from './entity-map';
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { User } from 'src/database/users/user.entity';
 import { UUID } from 'crypto';
 import { Privilege, UserPrivilege, UserTypePrivilege } from 'src/database/privileges/privilege.entity';
@@ -72,6 +72,15 @@ export class PrivilegeService {
 		if (!privilege) {
 			throw new BadRequestException('User type or privilege not found');
 		}
+
+		// Check if we're trying to remove MANAGE_SYSTEM from Admin user type
+		if (privilegeCode === PrivilegeCode.MANAGE_SYSTEM) {
+			const userType = await this.userTypeRepo.findOne({ where: { id: userTypeId } });
+			if (userType && userType.name === 'Admin') {
+				throw new ForbiddenException('Cannot remove MANAGE_SYSTEM privilege from Admin user type');
+			}
+		}
+
 		const userTypeAssignment = await this.userTypePrivAssignmentsRepo.findOne({ where: { user_type_id: userTypeId, privilege_id: privilege.id } });
 		if (!userTypeAssignment) {
 			throw new BadRequestException('User type or privilege not found');
