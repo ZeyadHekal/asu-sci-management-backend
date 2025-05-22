@@ -1,10 +1,8 @@
+import { Device } from 'src/database/devices/device.entity';
 
 /**********************/
 /* CHANGE STARTS HERE */
 /**********************/
-
-import { Device } from 'src/database/devices/device.entity';
-
 
 /* Replace tips
     1- Replace the folder name with your module name (e.g. users, event-schedules, etc.)
@@ -23,8 +21,8 @@ export {
     DevicePaginationInput as PaginationInput,
 } from './dtos';
 
-// Remove the following two lines and replace with import Device from the database
-
+// Device = Entity, remove the following line and import it from the database
+// export { Device as Entity } from 'src/database/devices/device.entity';
 export { Device as Entity };
 
 export { DeviceService as Service } from './service';
@@ -47,4 +45,4 @@ export { UUID } from 'crypto';
 export { PrivilegeCode } from 'src/privileges/definition';
 export { RequirePrivileges } from 'src/privileges/guard/decorator';
 export { BaseController } from 'src/base/base.controller';
-export { ApiResponse } from '@nestjs/swagger';
+export { ApiResponse, ApiOperation, ApiTags, ApiParam } from '@nestjs/swagger';

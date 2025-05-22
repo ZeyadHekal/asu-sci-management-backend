@@ -1,10 +1,8 @@
+import { Student } from 'src/database/students/student.entity';
 
 /**********************/
 /* CHANGE STARTS HERE */
 /**********************/
-
-import { Student } from 'src/database/students/student.entity';
-
 
 /* Replace tips
     1- Replace the folder name with your module name (e.g. users, event-schedules, etc.)
@@ -23,8 +21,8 @@ export {
     StudentPaginationInput as PaginationInput,
 } from './dtos';
 
-// Remove the following two lines and replace with import Student from the database
-
+// Student = Entity, remove the following line and import it from the database
+// export { Student as Entity } from 'src/database/students/student.entity';
 export { Student as Entity };
 
 export { StudentService as Service } from './service';
@@ -47,4 +45,4 @@ export { UUID } from 'crypto';
 export { PrivilegeCode } from 'src/privileges/definition';
 export { RequirePrivileges } from 'src/privileges/guard/decorator';
 export { BaseController } from 'src/base/base.controller';
-export { ApiResponse } from '@nestjs/swagger';
+export { ApiResponse, ApiOperation, ApiTags, ApiParam } from '@nestjs/swagger';

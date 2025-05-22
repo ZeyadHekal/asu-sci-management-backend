@@ -1,6 +1,7 @@
 import { ApiProperty, IntersectionType } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
-import { IsJWT, IsString, IsStrongPassword } from 'class-validator';
+import { IsJWT, IsString, IsStrongPassword, IsUUID } from 'class-validator';
+import { UUID } from 'crypto';
 
 export class RefreshRequsetDto {
 	@ApiProperty()
@@ -22,7 +23,34 @@ export class PrivilegRefreshDto {
 	privileges: string[];
 }
 
-export class LoginSuccessDto extends IntersectionType(AuthJwtDto, PrivilegRefreshDto) { }
+export class UserInfoDto {
+	@ApiProperty()
+	@Expose()
+	@IsUUID()
+	id: UUID;
+
+	@ApiProperty()
+	@Expose()
+	name: string;
+
+	@ApiProperty()
+	@Expose()
+	username: string;
+
+	@ApiProperty()
+	@Expose()
+	userType: string;
+
+	@ApiProperty()
+	@Expose()
+	isStudent: boolean;
+}
+
+export class LoginSuccessDto extends IntersectionType(AuthJwtDto, PrivilegRefreshDto) {
+	@ApiProperty()
+	@Expose()
+	user: UserInfoDto;
+}
 
 
 export class LoginRequestDto {

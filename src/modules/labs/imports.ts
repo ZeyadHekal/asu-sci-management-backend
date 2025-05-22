@@ -44,4 +44,4 @@ export { UUID } from 'crypto';
 export { PrivilegeCode } from 'src/privileges/definition';
 export { RequirePrivileges } from 'src/privileges/guard/decorator';
 export { BaseController } from 'src/base/base.controller';
-export { ApiResponse } from '@nestjs/swagger';
+export { ApiResponse, ApiOperation, ApiTags, ApiParam } from '@nestjs/swagger';

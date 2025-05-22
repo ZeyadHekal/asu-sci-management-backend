@@ -1,10 +1,8 @@
+import { Software } from 'src/database/softwares/software.entity';
 
 /**********************/
 /* CHANGE STARTS HERE */
 /**********************/
-
-import { Software } from 'src/database/softwares/software.entity';
-
 
 /* Replace tips
     1- Replace the folder name with your module name (e.g. users, event-schedules, etc.)
@@ -47,4 +45,4 @@ export { UUID } from 'crypto';
 export { PrivilegeCode } from 'src/privileges/definition';
 export { RequirePrivileges } from 'src/privileges/guard/decorator';
 export { BaseController } from 'src/base/base.controller';
-export { ApiResponse } from '@nestjs/swagger';
+export { ApiResponse, ApiOperation, ApiTags, ApiParam } from '@nestjs/swagger';

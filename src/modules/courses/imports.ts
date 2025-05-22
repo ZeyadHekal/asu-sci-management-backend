@@ -1,10 +1,8 @@
-
+import { Course } from 'src/database/courses/course.entity';
 
 /**********************/
 /* CHANGE STARTS HERE */
 /**********************/
-
-import { Course } from 'src/database/courses/course.entity';
 
 /* Replace tips
     1- Use global find and replace, set the files to include to src/modules/your_module_name
@@ -46,4 +44,4 @@ export { UUID } from 'crypto';
 export { PrivilegeCode } from 'src/privileges/definition';
 export { RequirePrivileges } from 'src/privileges/guard/decorator';
 export { BaseController } from 'src/base/base.controller';
-export { ApiResponse } from '@nestjs/swagger';
+export { ApiResponse, ApiOperation, ApiTags, ApiParam } from '@nestjs/swagger';

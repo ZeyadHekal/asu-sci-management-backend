@@ -1,3 +1,6 @@
+import { User } from 'src/database/users/user.entity';
+export { User as Entity };
+
 export {
     CreateUserDto as CreateDto,
     UpdateUserDto as UpdateDto,
@@ -6,8 +9,6 @@ export {
     UserPagedDto as PagedDto,
     UserPaginationInput as PaginationInput,
 } from './dtos';
-
-export { User as Entity } from 'src/database/users/user.entity';
 
 export { UserService as Service } from './service';
 
@@ -25,4 +26,4 @@ export { UUID } from 'crypto';
 export { PrivilegeCode } from 'src/privileges/definition';
 export { RequirePrivileges } from 'src/privileges/guard/decorator';
 export { BaseController } from 'src/base/base.controller';
-export { ApiResponse } from '@nestjs/swagger';
+export { ApiResponse, ApiOperation, ApiTags, ApiParam } from '@nestjs/swagger';

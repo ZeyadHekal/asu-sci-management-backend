@@ -32,5 +32,21 @@ services:
       - CRON_TIME=0 0 * * *  # Daily at midnight
       - INIT_BACKUP=1  # Create a backup when the container starts
 
+  # MinIO Service
+  minio:
+    image: minio/minio
+    container_name: zeyad-asu-minio
+    restart: always
+    ports:
+      - "${MINIO_PORT:-9000}:9000"  # API port
+      - "9001:9001"  # Console port
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ACCESS_KEY:-minioadmin}
+      - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY:-minioadmin}
+    volumes:
+      - zeyad_asu_minio_data:/data
+    command: server --console-address ":9001" /data
+
 volumes:
   zeyad_asu_db_backups:
+  zeyad_asu_minio_data:

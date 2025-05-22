@@ -10,6 +10,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { UserType } from 'src/database/users/user-type.entity';
 import { DeleteDto } from 'src/base/delete.dto';
 import { transformToInstance } from 'src/base/transformToInstance';
+import { UserDto } from 'src/users/dtos';
 
 @Injectable()
 export class PrivilegeService {
@@ -54,6 +55,18 @@ export class PrivilegeService {
 		await this.userTypePrivAssignmentsRepo.save(assignment);
 	}
 
+	async unassignPrivilegeFromUser(userId: UUID, privilegeCode: PrivilegeCode): Promise<DeleteDto> {
+		const privilege = await this.privilegesRepo.findOne({ where: { code: privilegeCode } });
+		if (!privilege) {
+			throw new BadRequestException('Privilege not found');
+		}
+		const userAssignment = await this.userPrivAssignmentsRepo.findOne({ where: { user_id: userId, privilege_id: privilege.id } });
+		if (!userAssignment) {
+			throw new BadRequestException('User privilege assignment not found');
+		}
+		return transformToInstance(DeleteDto, await this.userPrivAssignmentsRepo.delete({ user_id: userId, privilege_id: privilege.id }));
+	}
+
 	async unassignPrivilegeToUserType(userTypeId: UUID, privilegeCode: PrivilegeCode): Promise<DeleteDto> {
 		const privilege = await this.privilegesRepo.findOne({ where: { code: privilegeCode } });
 		if (!privilege) {
@@ -64,6 +77,47 @@ export class PrivilegeService {
 			throw new BadRequestException('User type or privilege not found');
 		}
 		return transformToInstance(DeleteDto, this.userTypePrivAssignmentsRepo.delete({ user_type_id: userTypeId, privilege_id: privilege.id }));
+	}
+
+	async getUsersByPrivilege(privilegeCode: PrivilegeCode): Promise<UserDto[]> {
+		// Find the privilege
+		const privilege = await this.privilegesRepo.findOne({ where: { code: privilegeCode } });
+		if (!privilege) {
+			throw new BadRequestException(`Privilege with code ${privilegeCode} not found`);
+		}
+
+		// Find users who have this privilege directly assigned
+		const userPrivileges = await this.userPrivAssignmentsRepo.find({
+			where: { privilege_id: privilege.id },
+			relations: ['user']
+		});
+		const usersWithDirectPrivilege = await Promise.all(
+			userPrivileges.map(async (up) => await up.user)
+		);
+
+		// Find user types that have this privilege
+		const userTypePrivileges = await this.userTypePrivAssignmentsRepo.find({
+			where: { privilege_id: privilege.id }
+		});
+		const userTypeIds = userTypePrivileges.map(utp => utp.user_type_id);
+
+		// Find users with those user types
+		const usersWithTypePrivilege = await this.userRepo.find({
+			where: { userTypeId: In(userTypeIds) }
+		});
+
+		// Combine and deduplicate users
+		const allUsers = [...usersWithDirectPrivilege, ...usersWithTypePrivilege];
+		const uniqueUserMap = new Map<string, User>();
+
+		allUsers.forEach(user => {
+			uniqueUserMap.set(user.id.toString(), user);
+		});
+
+		// Convert User entities to UserDto objects
+		return Array.from(uniqueUserMap.values()).map(user =>
+			transformToInstance(UserDto, user)
+		);
 	}
 
 	private async validateResourceIds(entityName: string | null, resourceIds?: number[]) {

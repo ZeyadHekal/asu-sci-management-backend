@@ -1,10 +1,11 @@
 import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
-import { AuthJwtDto, LoginSuccessDto, PrivilegRefreshDto } from './dtos';
+import { AuthJwtDto, LoginSuccessDto, PrivilegRefreshDto, UserInfoDto } from './dtos';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from 'src/database/users/user.entity';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
+import { transformToInstance } from 'src/base/transformToInstance';
 
 @Injectable()
 export class AuthService {
@@ -18,10 +19,30 @@ export class AuthService {
 		if (!user || !(await bcrypt.compare(password, user.password))) {
 			throw new BadRequestException('Incorrect username or password');
 		}
+
+		// Get user type 
+		const userType = await user.userType;
+
 		// Get privileges
 		const privileges = await user.getUserPrivileges();
+
+		// Generate tokens
 		const tokens = await this.generateTokens(user.id, user.name);
-		return { ...tokens, privileges: Object.keys(privileges) };
+
+		// Create user info
+		const userInfo = transformToInstance(UserInfoDto, {
+			id: user.id,
+			name: user.name,
+			username: user.username,
+			userType: userType.name,
+			isStudent: userType.name === 'Student'
+		});
+
+		return {
+			...tokens,
+			privileges: Object.keys(privileges),
+			user: userInfo
+		};
 	}
 
 	async refreshTokens(token: string): Promise<AuthJwtDto> {

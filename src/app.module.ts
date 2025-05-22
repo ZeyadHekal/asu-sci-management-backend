@@ -13,6 +13,7 @@ import { DeviceModule } from './modules/devices/module';
 import { LabSessionModule } from './modules/lab-session/module';
 import { DatabaseSeederModule } from './db-seeder/db-seeder.module';
 import { SoftwareModule } from './modules/softwares/module';
+import { FileModule } from './modules/files/module';
 
 
 @Module({
@@ -35,6 +36,7 @@ import { SoftwareModule } from './modules/softwares/module';
 		SoftwareModule,
 		DeviceModule,
 		LabSessionModule,
+		FileModule,
 	],
 })
 export class AppModule {}
