@@ -95,7 +95,6 @@ export class MaintenanceHistoryService {
     }
 
     async create(createDto: imports.CreateDto): Promise<imports.GetDto> {
-        console.log(createDto);
         const maintenance = this.repository.create(createDto);
         const savedMaintenance = await this.repository.save(maintenance);
 
@@ -286,5 +285,12 @@ export class MaintenanceHistoryService {
     async getDeviceMaintenanceHistory(deviceId: UUID, input: MaintenanceHistoryPaginationInput): Promise<imports.IPaginationOutput<imports.GetListDto>> {
         const modifiedInput = { ...input, deviceId };
         return this.getPaginated(modifiedInput);
+    }
+
+    // Get total count of maintenance records for a specific device
+    async getDeviceMaintenanceHistoryCount(deviceId: UUID): Promise<number> {
+        return this.repository.count({
+            where: { deviceId }
+        });
     }
 } 

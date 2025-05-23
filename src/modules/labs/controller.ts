@@ -22,7 +22,7 @@ import {
 } from './imports';
 
 @ApiTags('labs')
-	@RequirePrivileges({ and: [PrivilegeCode.MANAGE_SYSTEM] })
+	@RequirePrivileges({ or: [PrivilegeCode.MANAGE_LABS] })
 @Controller(constants.plural_name)
 export class LabController extends BaseController<Entity, CreateDto, UpdateDto, GetDto, GetListDto> {
 	constructor(public readonly service: Service) {
@@ -40,6 +40,7 @@ export class LabController extends BaseController<Entity, CreateDto, UpdateDto, 
 	}
 
 	@Get()
+	@RequirePrivileges({ or: [PrivilegeCode.MANAGE_LABS, PrivilegeCode.LAB_MAINTENANCE, PrivilegeCode.LAB_ASSISTANT, PrivilegeCode.REPORT_DEVICE] })
 	@ApiOperation({ summary: 'Get all labs', description: 'Retrieve all labs' })
 	@ApiResponse({ type: GetListDto, status: 200, description: 'Labs retrieved successfully' })
 	@ApiResponse({ status: 401, description: 'Unauthorized' })

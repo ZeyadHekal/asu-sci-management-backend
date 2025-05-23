@@ -44,10 +44,9 @@ export class CreateMaintenanceHistoryDto {
     @Expose()
     completedAt?: Date;
 
-    @ApiProperty({ description: 'Involved personnel names', required: false, type: [String] })
+    @ApiProperty({ description: 'Involved personnel names', required: false })
     @IsOptional()
-    @IsArray()
-    @IsString({ each: true })
+    @IsString()
     @Expose()
     involvedPersonnel: string;
 

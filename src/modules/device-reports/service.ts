@@ -32,17 +32,17 @@ export class DeviceReportService {
         // Only handle software issue reports (when appId exists)
         if (!report.appId) return;
 
-        if (newStatus === ReportStatus.CONFIRMED) {
+        if (newStatus === ReportStatus.IN_PROGRESS) {
             // Mark the software as not available on this device
             await this.deviceSoftwareRepository.update(
                 { deviceId: report.deviceId, softwareId: report.appId },
-                { status: 'not available', hasIssue: true }
+                { hasIssue: true }
             );
-        } else if (newStatus === ReportStatus.REJECTED && oldStatus === ReportStatus.CONFIRMED) {
+        } else if (newStatus === ReportStatus.REJECTED && oldStatus === ReportStatus.IN_PROGRESS) {
             // If rejecting a previously confirmed report, restore software availability
             await this.deviceSoftwareRepository.update(
                 { deviceId: report.deviceId, softwareId: report.appId },
-                { status: 'available', hasIssue: false }
+                { hasIssue: false }
             );
         }
     }

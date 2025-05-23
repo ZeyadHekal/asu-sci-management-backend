@@ -8,10 +8,8 @@ import { PaginationInput } from 'src/base/pagination.input';
 export enum ReportStatus {
     PENDING_REVIEW = 'PENDING_REVIEW',
     IN_PROGRESS = 'IN_PROGRESS',
-    CONFIRMED = 'CONFIRMED',
     RESOLVED = 'RESOLVED',
-    REJECTED = 'REJECTED',
-    CANCELLED = 'CANCELLED',
+    REJECTED = 'REJECTED'
 }
 
 // DTO for maintenance history in reports
@@ -38,7 +36,7 @@ export class ReportMaintenanceHistoryDto {
 
     @ApiProperty({ description: 'Involved personnel', required: false })
     @Expose()
-    involvedPersonnel?: string[];
+    involvedPersonnel?: string;
 
     @ApiProperty({ description: 'Completed at', required: false })
     @Expose()

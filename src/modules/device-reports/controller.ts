@@ -180,7 +180,7 @@ export class DeviceReportController {
     }
 
     @Post(':reportId/reject')
-    @RequirePrivileges({ and: [PrivilegeCode.MANAGE_SYSTEM] })
+    @RequirePrivileges({ and: [PrivilegeCode.LAB_MAINTENANCE, PrivilegeCode.MANAGE_LABS, PrivilegeCode.LAB_ASSISTANT] })
     @ApiOperation({ summary: 'Reject device report', description: 'Reject a device report and provide a reason (Admin/Management)' })
     @ApiParam({ name: 'reportId', description: 'Device Report ID', type: 'string' })
     @ApiResponse({ type: GetDto, status: 200, description: 'Device report rejected successfully' })

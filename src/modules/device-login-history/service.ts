@@ -184,4 +184,11 @@ export class DeviceLoginHistoryService {
             where: { IPAddress: ipAddress }
         });
     }
+
+    // Get total count of login sessions for a specific device
+    async getDeviceLoginHistoryCount(deviceId: UUID): Promise<number> {
+        return this.loginHistoryRepository.count({
+            where: { deviceId }
+        });
+    }
 } 

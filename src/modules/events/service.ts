@@ -2095,7 +2095,6 @@ export class EventService extends BaseService<imports.Entity, imports.CreateDto,
         scheduleId: UUID,
         fileId: string
     ): Promise<void> {
-        console.log(studentId, scheduleId, fileId);
         // Verify student is enrolled in this exam schedule and get the eventId
         const studentSchedule = await this.studentEventScheduleRepository.findOne({
             where: {

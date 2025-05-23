@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, Put, ForbiddenException, UseGuards } from '@nestjs/common';
 import {
 	Entity,
 	CreateDto,
@@ -25,6 +25,7 @@ import { DeviceSoftwarePagedDto } from '../softwares/dtos';
 import { DevicePaginationInput, UpdateDeviceSoftwareDto, AddDeviceSoftwareDto, UpdateDeviceSoftwareListDto, MaintenanceUpdateDto } from './dtos';
 import { CurrentUser } from 'src/auth/decorators';
 import { User } from 'src/database/users/user.entity';
+import { RequireDeviceAccess, DeviceAccessGuard } from './guards';
 
 @ApiTags('devices')
 	@RequirePrivileges({ or: [PrivilegeCode.MANAGE_LABS, PrivilegeCode.LAB_MAINTENANCE] })
@@ -58,6 +59,7 @@ export class DeviceController extends BaseController<Entity, CreateDto, UpdateDt
 	}
 
 	@Get()
+	@RequirePrivileges({ or: [PrivilegeCode.MANAGE_LABS, PrivilegeCode.LAB_MAINTENANCE, PrivilegeCode.LAB_ASSISTANT, PrivilegeCode.REPORT_DEVICE] })
 	@ApiOperation({ summary: 'Get all devices', description: 'Retrieve all devices' })
 	@ApiResponse({ type: GetListDto, status: 200, description: 'Devices retrieved successfully' })
 	@ApiResponse({ status: 401, description: 'Unauthorized' })
@@ -76,6 +78,9 @@ export class DeviceController extends BaseController<Entity, CreateDto, UpdateDt
 	}
 
 	@Get(':' + constants.entity_id)
+	@RequirePrivileges({ or: [PrivilegeCode.MANAGE_LABS, PrivilegeCode.LAB_MAINTENANCE, PrivilegeCode.LAB_ASSISTANT] })
+	@UseGuards(DeviceAccessGuard)
+	@RequireDeviceAccess()
 	@ApiOperation({ summary: 'Get device by ID', description: 'Retrieve a device by its ID' })
 	@ApiParam({ name: constants.entity_id, description: 'Device ID', type: 'string' })
 	@ApiResponse({ type: GetDto, status: 200, description: 'Device retrieved successfully' })
@@ -87,6 +92,9 @@ export class DeviceController extends BaseController<Entity, CreateDto, UpdateDt
 	}
 
 	@Get(':' + constants.entity_id + '/details')
+	@RequirePrivileges({ or: [PrivilegeCode.MANAGE_LABS, PrivilegeCode.LAB_MAINTENANCE, PrivilegeCode.LAB_ASSISTANT] })
+	@UseGuards(DeviceAccessGuard)
+	@RequireDeviceAccess()
 	@ApiOperation({ summary: 'Get comprehensive device details', description: 'Retrieve comprehensive device information including lab, assistant, specifications, software, and statistics' })
 	@ApiParam({ name: constants.entity_id, description: 'Device ID', type: 'string' })
 	@ApiResponse({ type: DeviceDetailsDto, status: 200, description: 'Device details retrieved successfully' })
@@ -98,6 +106,8 @@ export class DeviceController extends BaseController<Entity, CreateDto, UpdateDt
 	}
 
 	@Patch(':' + constants.entity_id)
+	@UseGuards(DeviceAccessGuard)
+	@RequireDeviceAccess()
 	@ApiOperation({ summary: 'Update device', description: 'Update an existing device by ID' })
 	@ApiParam({ name: constants.entity_id, description: 'Device ID', type: 'string' })
 	@ApiResponse({ type: GetDto, status: 200, description: 'Device updated successfully' })
@@ -106,7 +116,7 @@ export class DeviceController extends BaseController<Entity, CreateDto, UpdateDt
 	@ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
 	@ApiResponse({ status: 404, description: 'Not Found - Device does not exist' })
 	update(@Param(constants.entity_id) id: UUID, @Body() updateDto: UpdateDto): Promise<GetDto> {
-		return super.update(id, updateDto);
+		return this.service.update(id, updateDto);
 	}
 
 	@Delete(':' + constants.entity_ids)
@@ -123,6 +133,7 @@ export class DeviceController extends BaseController<Entity, CreateDto, UpdateDt
 
 	// List all softwares for that device
 	@Get(`:${constants.entity_id}/softwares`)
+	@RequirePrivileges({ or: [PrivilegeCode.MANAGE_LABS, PrivilegeCode.LAB_MAINTENANCE, PrivilegeCode.LAB_ASSISTANT, PrivilegeCode.REPORT_DEVICE] })
 	@ApiOperation({ summary: 'Get device softwares', description: 'Retrieve all software installed on a specific device' })
 	@ApiParam({ name: constants.entity_id, description: 'Device ID', type: 'string' })
 	@ApiResponse({ type: DeviceSoftwarePagedDto, isArray: true, status: 200, description: 'Device softwares retrieved successfully' })
@@ -136,43 +147,50 @@ export class DeviceController extends BaseController<Entity, CreateDto, UpdateDt
 	// Get device reports
 	@Get(`:${constants.entity_id}/reports`)
 	@RequirePrivileges({ or: [PrivilegeCode.MANAGE_LABS, PrivilegeCode.LAB_MAINTENANCE, PrivilegeCode.LAB_ASSISTANT] })
+	@UseGuards(DeviceAccessGuard)
+	@RequireDeviceAccess()
 	@ApiOperation({ summary: 'Get device reports', description: 'Retrieve all reports for a specific device' })
 	@ApiParam({ name: constants.entity_id, description: 'Device ID', type: 'string' })
 	@ApiResponse({ status: 200, description: 'Device reports retrieved successfully' })
 	@ApiResponse({ status: 401, description: 'Unauthorized' })
 	@ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
 	@ApiResponse({ status: 404, description: 'Not Found - Device does not exist' })
-	async getDeviceReports(@Param(constants.entity_id) id: UUID, @Query() input: PaginationInput, @CurrentUser() user: User): Promise<any> {
-		return this.service.getDeviceReports(id, input, user);
+	async getDeviceReports(@Param(constants.entity_id) id: UUID, @Query() input: PaginationInput): Promise<any> {
+		return this.service.getDeviceReports(id, input);
 	}
 
 	// Get device maintenance history
 	@Get(`:${constants.entity_id}/maintenance-history`)
 	@RequirePrivileges({ or: [PrivilegeCode.MANAGE_LABS, PrivilegeCode.LAB_MAINTENANCE, PrivilegeCode.LAB_ASSISTANT] })
+	@UseGuards(DeviceAccessGuard)
+	@RequireDeviceAccess()
 	@ApiOperation({ summary: 'Get device maintenance history', description: 'Retrieve maintenance history for a specific device' })
 	@ApiParam({ name: constants.entity_id, description: 'Device ID', type: 'string' })
 	@ApiResponse({ status: 200, description: 'Device maintenance history retrieved successfully' })
 	@ApiResponse({ status: 401, description: 'Unauthorized' })
 	@ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
 	@ApiResponse({ status: 404, description: 'Not Found - Device does not exist' })
-	async getDeviceMaintenanceHistory(@Param(constants.entity_id) id: UUID, @Query() input: PaginationInput, @CurrentUser() user: User): Promise<any> {
-		return this.service.getDeviceMaintenanceHistory(id, input, user);
+	async getDeviceMaintenanceHistory(@Param(constants.entity_id) id: UUID, @Query() input: PaginationInput): Promise<any> {
+		return this.service.getDeviceMaintenanceHistory(id, input);
 	}
 
 	// Get device login history
 	@Get(`:${constants.entity_id}/login-history`)
 	@RequirePrivileges({ or: [PrivilegeCode.MANAGE_LABS, PrivilegeCode.LAB_MAINTENANCE, PrivilegeCode.LAB_ASSISTANT] })
+	@UseGuards(DeviceAccessGuard)
+	@RequireDeviceAccess()
 	@ApiOperation({ summary: 'Get device login history', description: 'Retrieve login history for a specific device based on IP address' })
 	@ApiParam({ name: constants.entity_id, description: 'Device ID', type: 'string' })
 	@ApiResponse({ status: 200, description: 'Device login history retrieved successfully' })
 	@ApiResponse({ status: 401, description: 'Unauthorized' })
 	@ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
 	@ApiResponse({ status: 404, description: 'Not Found - Device does not exist' })
-	async getDeviceLoginHistory(@Param(constants.entity_id) id: UUID, @Query() input: PaginationInput, @CurrentUser() user: User): Promise<any> {
-		return this.service.getDeviceLoginHistory(id, input, user);
+	async getDeviceLoginHistory(@Param(constants.entity_id) id: UUID, @Query() input: PaginationInput): Promise<any> {
+		return this.service.getDeviceLoginHistory(id, input);
 	}
 
 	@Post(`:${constants.entity_id}/softwares`)
+	@RequirePrivileges({ or: [PrivilegeCode.MANAGE_LABS, PrivilegeCode.LAB_MAINTENANCE, PrivilegeCode.LAB_ASSISTANT] })
 	@ApiOperation({ summary: 'Add software to device', description: 'Add a new software to a specific device' })
 	@ApiParam({ name: constants.entity_id, description: 'Device ID', type: 'string' })
 	@ApiResponse({ type: GetDto, status: 201, description: 'Software added successfully' })
@@ -185,6 +203,7 @@ export class DeviceController extends BaseController<Entity, CreateDto, UpdateDt
 	}
 
 	@Patch(`:${constants.entity_id}/softwares/:softwareId`)
+	@RequirePrivileges({ or: [PrivilegeCode.MANAGE_LABS, PrivilegeCode.LAB_MAINTENANCE, PrivilegeCode.LAB_ASSISTANT] })
 	@ApiOperation({ summary: 'Update software on device', description: 'Update an existing software on a specific device' })
 	@ApiParam({ name: constants.entity_id, description: 'Device ID', type: 'string' })
 	@ApiParam({ name: 'softwareId', description: 'Software ID', type: 'string' })
@@ -198,6 +217,7 @@ export class DeviceController extends BaseController<Entity, CreateDto, UpdateDt
 	}
 
 	@Delete(`:${constants.entity_id}/softwares/:softwareId`)
+	@RequirePrivileges({ or: [PrivilegeCode.MANAGE_LABS, PrivilegeCode.LAB_MAINTENANCE, PrivilegeCode.LAB_ASSISTANT] })
 	@ApiOperation({ summary: 'Remove software from device', description: 'Remove an existing software from a specific device' })
 	@ApiParam({ name: constants.entity_id, description: 'Device ID', type: 'string' })
 	@ApiParam({ name: 'softwareId', description: 'Software ID', type: 'string' })
@@ -210,6 +230,7 @@ export class DeviceController extends BaseController<Entity, CreateDto, UpdateDt
 	}
 
 	@Put(`:${constants.entity_id}/software-list`)
+	@RequirePrivileges({ or: [PrivilegeCode.MANAGE_LABS, PrivilegeCode.LAB_MAINTENANCE, PrivilegeCode.LAB_ASSISTANT] })
 	@ApiOperation({ summary: 'Update software list on device', description: 'Update the list of software on a specific device' })
 	@ApiParam({ name: constants.entity_id, description: 'Device ID', type: 'string' })
 	@ApiResponse({ type: GetDto, status: 200, description: 'Software list updated successfully' })
@@ -222,7 +243,7 @@ export class DeviceController extends BaseController<Entity, CreateDto, UpdateDt
 	}
 
 	@Post(`:${constants.entity_id}/maintenance`)
-	@RequirePrivileges({ and: [PrivilegeCode.LAB_ASSISTANT] })
+	@RequirePrivileges({ or: [PrivilegeCode.MANAGE_LABS, PrivilegeCode.LAB_MAINTENANCE, PrivilegeCode.LAB_ASSISTANT] })
 	@ApiOperation({ summary: 'Create maintenance update', description: 'Create a maintenance update for a device' })
 	@ApiParam({ name: constants.entity_id, description: 'Device ID', type: 'string' })
 	@ApiResponse({ status: 201, description: 'Maintenance update created successfully' })

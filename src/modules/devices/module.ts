@@ -12,6 +12,7 @@ import { DeviceLoginHistory } from 'src/database/devices/device-login-history.en
 import { DeviceMaintenanceHistoryModule } from '../device-maintenance-history/module';
 import { DeviceReportModule } from '../device-reports/module';
 import { DeviceLoginHistoryModule } from '../device-login-history/module';
+import { DeviceAccessGuard } from './guards/device-access.guard';
 
 @Module({
 	imports: [
@@ -21,7 +22,7 @@ import { DeviceLoginHistoryModule } from '../device-login-history/module';
 		DeviceLoginHistoryModule,
 	],
 	controllers: [DeviceController],
-	providers: [DeviceService],
+	providers: [DeviceService, DeviceAccessGuard],
 	exports: [DeviceService],
 })
 export class DeviceModule {}

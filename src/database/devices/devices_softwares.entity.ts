@@ -20,10 +20,6 @@ export class DeviceSoftware extends OmitType(ManagementEntity, ['id']) {
 	@Expose()
 	hasIssue: boolean;
 
-	@Column({ default: 'available', type: 'varchar', length: 50 })
-	@Expose()
-	status: string; // 'available' or 'not available'
-
 	@Column({ nullable: true })
 	@Expose()
 	issueDescription?: string;

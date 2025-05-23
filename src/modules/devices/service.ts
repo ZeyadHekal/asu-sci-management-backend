@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import * as imports from './imports';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Not } from 'typeorm';
+import { Repository, Not, In } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { BaseService } from 'src/base/base.service';
 import { Lab } from 'src/database/labs/lab.entity';
@@ -23,7 +23,7 @@ import { MaintenanceHistoryService } from '../device-maintenance-history/service
 import { MaintenanceHistoryPaginationInput } from '../device-maintenance-history/dtos';
 import { LoginHistoryPaginationInput } from '../device-login-history/dtos';
 import { PrivilegeCode } from 'src/db-seeder/data/privileges';
-import { Privilege, UserPrivilege, UserTypePrivilege } from 'src/database/privileges/privilege.entity';
+
 import { MaintenanceType, MaintenanceStatus } from 'src/database/devices/device-maintenance-history.entity';
 
 @Injectable()
@@ -38,9 +38,6 @@ export class DeviceService extends BaseService<imports.Entity, imports.CreateDto
 		@InjectRepository(DeviceSpecification) private readonly deviceSpecificationRepository: Repository<DeviceSpecification>,
 		@InjectRepository(Software) private readonly softwareRepository: Repository<Software>,
 		@InjectRepository(DeviceReport) private readonly deviceReportRepository: Repository<DeviceReport>,
-		@InjectRepository(Privilege) private readonly privilegeRepository: Repository<Privilege>,
-		@InjectRepository(UserPrivilege) private readonly userPrivilegeRepository: Repository<UserPrivilege>,
-		@InjectRepository(UserTypePrivilege) private readonly userTypePrivilegeRepository: Repository<UserTypePrivilege>,
 		private readonly deviceReportService: DeviceReportService,
 		private readonly maintenanceHistoryService: MaintenanceHistoryService,
 		private readonly deviceLoginHistoryService: DeviceLoginHistoryService,
@@ -94,101 +91,16 @@ export class DeviceService extends BaseService<imports.Entity, imports.CreateDto
 			throw new BadRequestException('Invalid assistant id!');
 		}
 
-		// Find the LAB_ASSISTANT privilege
-		const labAssistantPrivilege = await this.privilegeRepository.findOneBy({ code: PrivilegeCode.LAB_ASSISTANT });
-		if (!labAssistantPrivilege) {
-			throw new BadRequestException('LAB_ASSISTANT privilege not found in system!');
-		}
+		// Get user privileges using the User entity method
+		const userPrivileges = await user.getUserPrivileges();
 
-		// Check if user has direct LAB_ASSISTANT privilege
-		const directPrivilege = await this.userPrivilegeRepository.findOne({
-			where: {
-				user_id: userId,
-				privilege_id: labAssistantPrivilege.id
-			}
-		});
-
-		if (directPrivilege) {
-			return; // User has direct privilege
-		}
-
-		// Check if user's user type has LAB_ASSISTANT privilege
-		const userTypePrivilege = await this.userTypePrivilegeRepository.findOne({
-			where: {
-				user_type_id: user.userTypeId,
-				privilege_id: labAssistantPrivilege.id
-			}
-		});
-
-		if (!userTypePrivilege) {
+		// Check if user has LAB_ASSISTANT privilege
+		if (!userPrivileges[PrivilegeCode.LAB_ASSISTANT]) {
 			throw new BadRequestException('User does not have LAB_ASSISTANT privilege!');
 		}
 	}
 
-	/**
-	 * Checks if a LAB_ASSISTANT user has access to a specific device
-	 * LAB_ASSISTANT users can only access devices from labs they're assigned to
-	 * @param user The user requesting access
-	 * @param deviceId The device ID to check access for
-	 * @returns true if user has access, false otherwise
-	 */
-	private async canLabAssistantAccessDevice(user: User, deviceId: UUID): Promise<boolean> {
-		// Get user privileges
-		const userPrivileges = await this.getUserPrivileges(user);
 
-		// If user has MANAGE_LABS or LAB_MAINTENANCE, they can access all devices
-		if (userPrivileges.includes(PrivilegeCode.MANAGE_LABS) || userPrivileges.includes(PrivilegeCode.LAB_MAINTENANCE)) {
-			return true;
-		}
-
-		// If user doesn't have LAB_ASSISTANT privilege, deny access
-		if (!userPrivileges.includes(PrivilegeCode.LAB_ASSISTANT)) {
-			return false;
-		}
-
-		// Get the device and check if user is assigned as assistant to that lab
-		const device = await this.repository.findOne({
-			where: { id: deviceId },
-			relations: ['lab']
-		});
-
-		return device.assisstantId === user.id;
-	}
-
-	/**
-	 * Gets all privileges for a user (both direct and through user type)
-	 * @param user The user to get privileges for
-	 * @returns Array of privilege codes
-	 */
-	private async getUserPrivileges(user: User): Promise<PrivilegeCode[]> {
-		const privileges: PrivilegeCode[] = [];
-
-		// Get direct user privileges
-		const directPrivileges = await this.userPrivilegeRepository.find({
-			where: { user_id: user.id },
-			relations: ['privilege']
-		});
-
-		for (const userPrivilege of directPrivileges) {
-			const privilege = await userPrivilege.privilege;
-			privileges.push(privilege.code as PrivilegeCode);
-		}
-
-		// Get user type privileges
-		const userTypePrivileges = await this.userTypePrivilegeRepository.find({
-			where: { user_type_id: user.userTypeId },
-			relations: ['privilege']
-		});
-
-		for (const userTypePrivilege of userTypePrivileges) {
-			const privilege = await userTypePrivilege.privilege;
-			if (!privileges.includes(privilege.code as PrivilegeCode)) {
-				privileges.push(privilege.code as PrivilegeCode);
-			}
-		}
-
-		return privileges;
-	}
 
 	async beforeUpdate(id: UUID, updateDto: imports.UpdateDto): Promise<imports.UpdateDto> {
 		// Validate assistant has LAB_ASSISTANT privilege if being updated
@@ -224,7 +136,30 @@ export class DeviceService extends BaseService<imports.Entity, imports.CreateDto
 
 	async update(id: UUID, updateDto: imports.UpdateDto): Promise<imports.GetDto> {
 		const validatedDto = await this.beforeUpdate(id, updateDto);
-		return super.update(id, validatedDto);
+
+		// Update the main device record
+		const device = await super.update(id, validatedDto);
+
+		// Handle specifications update if provided
+		if (validatedDto.specifications !== undefined) {
+			// Remove existing specifications
+			await this.deviceSpecificationRepository.delete({ deviceId: id });
+
+			// Add new specifications if any
+			if (validatedDto.specifications.length > 0) {
+				const specifications = validatedDto.specifications.map((spec) => {
+					const deviceSpec = new DeviceSpecification();
+					deviceSpec.category = spec.category;
+					deviceSpec.value = spec.value;
+					deviceSpec.deviceId = id;
+					return deviceSpec;
+				});
+
+				await this.deviceSpecificationRepository.save(specifications);
+			}
+		}
+
+		return device;
 	}
 
 	async create(createDto: imports.CreateDto): Promise<imports.GetDto> {
@@ -269,9 +204,9 @@ export class DeviceService extends BaseService<imports.Entity, imports.CreateDto
 		}
 
 		if (status) {
-			if (status.toLowerCase() === 'Working') {
+			if (status.toLowerCase() === 'working') {
 				query.andWhere('device.hasIssue = :hasIssue', { hasIssue: false });
-			} else if (status.toLowerCase() === 'Has Issues') {
+			} else if (status.toLowerCase() === 'has issues') {
 				query.andWhere('device.hasIssue = :hasIssue', { hasIssue: true });
 			}
 		}
@@ -314,7 +249,7 @@ export class DeviceService extends BaseService<imports.Entity, imports.CreateDto
 				const openReports = await this.deviceReportRepository.count({
 					where: {
 						deviceId: device.id,
-						status: Not(ReportStatus.RESOLVED) // Count reports that are not resolved
+						status: Not(In([ReportStatus.RESOLVED, ReportStatus.REJECTED])) // Count reports that are not resolved nor rejected
 					}
 				});
 
@@ -357,7 +292,6 @@ export class DeviceService extends BaseService<imports.Entity, imports.CreateDto
 			.take(limit);
 		const total = await query1.getCount();
 		const deviceSoftwares = await query1.getRawMany();
-		console.log(deviceSoftwares);
 		// Transform to DTOs
 		const items = deviceSoftwares.map((devSoft: any) =>
 			transformToInstance(DeviceSoftwareListDto, {
@@ -498,17 +432,11 @@ export class DeviceService extends BaseService<imports.Entity, imports.CreateDto
 	}
 
 	// Get device reports
-	async getDeviceReports(id: UUID, input: PaginationInput, user: User): Promise<any> {
+	async getDeviceReports(id: UUID, input: PaginationInput): Promise<any> {
 		// Check if device exists
 		const device = await this.repository.findOneBy({ id });
 		if (!device) {
 			throw new NotFoundException('Device not found');
-		}
-
-		// Check if LAB_ASSISTANT user has access to this device
-		const hasAccess = await this.canLabAssistantAccessDevice(user, id);
-		if (!hasAccess) {
-			throw new NotFoundException('Device not found or access denied');
 		}
 
 		// Convert PaginationInput to DeviceReportPaginationInput and delegate to DeviceReportService
@@ -521,17 +449,11 @@ export class DeviceService extends BaseService<imports.Entity, imports.CreateDto
 	}
 
 	// Get device maintenance history
-	async getDeviceMaintenanceHistory(id: UUID, input: PaginationInput, user: User): Promise<any> {
+	async getDeviceMaintenanceHistory(id: UUID, input: PaginationInput): Promise<any> {
 		// Check if device exists
 		const device = await this.repository.findOneBy({ id });
 		if (!device) {
 			throw new NotFoundException('Device not found');
-		}
-
-		// Check if LAB_ASSISTANT user has access to this device
-		const hasAccess = await this.canLabAssistantAccessDevice(user, id);
-		if (!hasAccess) {
-			throw new NotFoundException('Device not found or access denied');
 		}
 
 		// Convert PaginationInput to MaintenanceHistoryPaginationInput and delegate to MaintenanceHistoryService
@@ -544,17 +466,11 @@ export class DeviceService extends BaseService<imports.Entity, imports.CreateDto
 	}
 
 	// Get device login history
-	async getDeviceLoginHistory(id: UUID, input: PaginationInput, user: User): Promise<any> {
+	async getDeviceLoginHistory(id: UUID, input: PaginationInput): Promise<any> {
 		// Check if device exists
 		const device = await this.repository.findOneBy({ id });
 		if (!device) {
 			throw new NotFoundException('Device not found');
-		}
-
-		// Check if LAB_ASSISTANT user has access to this device
-		const hasAccess = await this.canLabAssistantAccessDevice(user, id);
-		if (!hasAccess) {
-			throw new NotFoundException('Device not found or access denied');
 		}
 
 		// Convert PaginationInput to LoginHistoryPaginationInput and delegate to DeviceLoginHistoryService
@@ -602,10 +518,14 @@ export class DeviceService extends BaseService<imports.Entity, imports.CreateDto
 
 		// Get counts for reports, maintenance, and login sessions
 		const totalReports = await this.deviceReportRepository.count({
-			where: { deviceId: id }
+			where: { deviceId: id, status: Not(In([ReportStatus.RESOLVED, ReportStatus.REJECTED])) }
 		});
-		const totalMaintenanceRecords = 0; // Placeholder for now
-		const totalLoginSessions = 0; // Placeholder for now
+
+		// Get total maintenance records count
+		const totalMaintenanceRecords = await this.maintenanceHistoryService.getDeviceMaintenanceHistoryCount(id);
+
+		// Get total login sessions count
+		const totalLoginSessions = await this.deviceLoginHistoryService.getDeviceLoginHistoryCount(id);
 
 		// Get lab and assistant details
 		const lab = await device.lab;
