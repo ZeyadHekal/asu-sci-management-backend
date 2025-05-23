@@ -224,20 +224,6 @@ export class EventController extends BaseController<Event, CreateEventDto, Updat
 		return { message: 'Exam ended successfully' };
 	}
 
-	@Post(':scheduleId/upload-exam-models')
-	@RequirePrivileges({ and: [PrivilegeCode.MANAGE_SYSTEM] })
-	@UseInterceptors(FilesInterceptor('examModels', 20))
-	@ApiOperation({ summary: 'Upload multiple exam models for exam schedule' })
-	@ApiConsumes('multipart/form-data')
-	@ApiParam({ name: 'scheduleId', description: 'Event Schedule ID' })
-	@ApiResponse({ status: 200, description: 'Exam models uploaded successfully', type: dtos.ExamModelsResponseDto })
-	async uploadExamModels(
-		@Param('scheduleId') scheduleId: UUID,
-		@UploadedFiles() examModels: Express.Multer.File[]
-	): Promise<dtos.ExamModelsResponseDto> {
-		return await this.eventService.uploadExamModels(scheduleId, examModels);
-	}
-
 	@Get(':scheduleId/download-submissions')
 	@RequirePrivileges({ and: [PrivilegeCode.MANAGE_SYSTEM] })
 	@ApiOperation({ summary: 'Download all student submissions as compressed archive (RAR or tar.gz)' })

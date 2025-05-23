@@ -441,6 +441,14 @@ export class UserService extends BaseService<imports.Entity, imports.CreateDto, 
 			.leftJoinAndSelect('userPrivileges.privilege', 'privilege')
 			.where('user.userTypeId != :studentTypeId', { studentTypeId: studentType.id });
 
+		// Apply search if provided
+		if (input.search) {
+			query.andWhere(
+				'(user.name LIKE :search OR user.username LIKE :search OR user.title LIKE :search OR user.department LIKE :search)',
+				{ search: `%${input.search}%` }
+			);
+		}
+
 		// Apply filters if provided
 		if (input.department) {
 			query.andWhere('user.department LIKE :department', { department: `%${input.department}%` });
@@ -448,10 +456,6 @@ export class UserService extends BaseService<imports.Entity, imports.CreateDto, 
 
 		if (input.userType) {
 			query.andWhere('userType.name LIKE :userType', { userType: input.userType });
-		}
-
-		if (input.status !== undefined) {
-			query.andWhere('user.status = :status', { status: input.status });
 		}
 
 		// Apply pagination and sorting

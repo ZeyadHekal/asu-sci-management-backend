@@ -76,6 +76,7 @@ export class CourseSeeder {
 		const defaultGroup = this.courseGroupRepo.create({
 			courseId: courseId as any,
 			order: 999, // Set to 999 for lowest priority
+			groupNumber: 999,
 			isDefault: true,
 			labId: null, // No lab assigned initially
 			capacity: 0, // Will be calculated when lab is assigned

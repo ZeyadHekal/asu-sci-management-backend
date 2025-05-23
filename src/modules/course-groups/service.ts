@@ -1,7 +1,7 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import * as imports from './imports';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, Not } from 'typeorm';
+import { Repository, In, Not, EntityManager } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { BaseService } from 'src/base/base.service';
 import { Course } from 'src/database/courses/course.entity';
@@ -16,6 +16,8 @@ import { CourseGroupScheduleTableDto, CreateCourseGroupScheduleDto, UpdateCourse
 
 @Injectable()
 export class CourseGroupService extends BaseService<imports.Entity, imports.CreateDto, imports.UpdateDto, imports.GetDto, imports.GetListDto> {
+	private readonly logger = new Logger(CourseGroupService.name);
+
 	constructor(
 		private readonly configService: ConfigService,
 		@InjectRepository(imports.Entity) protected readonly repository: Repository<imports.Entity>,
@@ -93,7 +95,8 @@ export class CourseGroupService extends BaseService<imports.Entity, imports.Crea
 	}
 
 	async create(createDto: imports.CreateDto): Promise<imports.GetDto> {
-		const courseGroup = await super.create(createDto);
+		const maxNonDefaultOrder = await this.repository.count({ where: { courseId: createDto.courseId, isDefault: false } });
+		const courseGroup = await super.create({ ...createDto, groupNumber: maxNonDefaultOrder + 1 } as any);
 
 		// Calculate and update capacity
 		const capacity = await this.calculateGroupCapacity(courseGroup.id);
@@ -275,7 +278,7 @@ export class CourseGroupService extends BaseService<imports.Entity, imports.Crea
 
 				return transformToInstance(CourseGroupScheduleTableDto, {
 					id: courseGroup.id,
-					groupName: courseGroup.isDefault ? 'No Group' : `Group ${String.fromCharCode(64 + courseGroup.order)}`, // A, B, C, etc.
+					groupName: courseGroup.isDefault ? 'No Group' : `Group ${String.fromCharCode(64 + courseGroup.groupNumber)}`, // A, B, C, etc.
 					labName: lab?.name || 'No Lab Assigned',
 					weekDay: schedule?.weekDay || 'Not Scheduled',
 					timeSlot: schedule ? `${schedule.startTime} - ${schedule.endTime}` : 'Not Scheduled',
@@ -405,7 +408,79 @@ export class CourseGroupService extends BaseService<imports.Entity, imports.Crea
 			throw new BadRequestException('Cannot delete default groups!');
 		}
 
-		return super.delete(ids);
+		// Use a transaction to ensure data consistency
+		return await this.repository.manager.transaction(async (transactionalEntityManager) => {
+			// For each group to be deleted, move all students to the default group
+			for (const groupId of ids) {
+				await this.moveStudentsToDefaultGroupInTransaction(groupId, transactionalEntityManager);
+			}
+
+			// Delete the course groups
+			const result = await transactionalEntityManager.delete(this.repository.target, ids);
+
+			return {
+				message: `Successfully deleted ${result.affected} course group(s) and moved all students to default groups.`,
+				affected: result.affected || 0,
+			};
+		});
+	}
+
+	/**
+ * Move all students from a course group to the default group of the same course
+ */
+	private async moveStudentsToDefaultGroup(groupId: imports.UUID): Promise<void> {
+		return this.moveStudentsToDefaultGroupInTransaction(groupId, this.repository.manager);
+	}
+
+	/**
+	 * Move all students from a course group to the default group of the same course (transaction-aware)
+	 */
+	private async moveStudentsToDefaultGroupInTransaction(groupId: imports.UUID, entityManager: EntityManager): Promise<void> {
+		// Get the course group to find its course
+		const courseGroup = await entityManager.findOneBy(this.repository.target, { id: groupId });
+		if (!courseGroup) {
+			// Group doesn't exist, nothing to do
+			return;
+		}
+
+		// Find the default group for this course
+		const defaultGroup = await entityManager.findOne(this.repository.target, {
+			where: {
+				courseId: courseGroup.courseId,
+				isDefault: true
+			},
+		});
+
+		if (!defaultGroup) {
+			throw new BadRequestException(
+				`No default group found for course. Cannot move students from group ${groupId}.`
+			);
+		}
+
+		// Get all students currently in this group
+		const studentsInGroup = await entityManager.find(StudentCourses, {
+			where: { courseGroupId: groupId },
+		});
+
+		if (studentsInGroup.length === 0) {
+			// No students to move
+			return;
+		}
+
+		// Move all students to the default group
+		await entityManager.update(
+			StudentCourses,
+			{ courseGroupId: groupId },
+			{
+				courseGroupId: defaultGroup.id,
+				groupNumber: defaultGroup.groupNumber
+			}
+		);
+
+		// Log the operation for audit purposes
+		this.logger.log(
+			`Moved ${studentsInGroup.length} students from group ${groupId} to default group ${defaultGroup.id} for course ${courseGroup.courseId}`
+		);
 	}
 
 	async getStudentsInDefaultGroup(courseId: imports.UUID): Promise<number> {

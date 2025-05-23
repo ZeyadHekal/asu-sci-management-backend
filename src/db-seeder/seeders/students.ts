@@ -15,6 +15,7 @@ import { Lab } from 'src/database/labs/lab.entity';
 import { CourseGroup } from 'src/database/courses/course-group.entity';
 import { ExamModel } from 'src/database/events/exam-models.entity';
 import { File } from 'src/modules/files/entities/file.entity';
+import { StudentsFiles } from 'src/database/students/student_files.entity';
 
 interface StudentTestCase {
     username: string;
@@ -42,6 +43,7 @@ export class StudentSeeder {
         @InjectRepository(CourseGroup) private courseGroupRepo: Repository<CourseGroup>,
         @InjectRepository(ExamModel) private examModelRepo: Repository<ExamModel>,
         @InjectRepository(File) private fileRepo: Repository<File>,
+        @InjectRepository(StudentsFiles) private studentFilesRepo: Repository<StudentsFiles>,
         private configService: ConfigService,
     ) { }
 
@@ -272,6 +274,7 @@ export class StudentSeeder {
 
                         if (otherEventSchedules === 0) {
                             // Delete the event if it's not used by other schedules
+                            await this.studentFilesRepo.delete({ eventId: event.id });
                             await this.eventRepo.delete({ id: event.id });
                             console.log(`🗑️ Removed orphaned event: ${event.name}`);
                         }
@@ -364,7 +367,8 @@ export class StudentSeeder {
             const lab = labs[0]; // Use first available lab
 
             // Create a group connected to a lab using helper method
-            const labGroup = await this.findOrCreateCourseGroup(course, false, lab.id);
+            // const labGroup = await this.findOrCreateCourseGroup(course, false, lab.id);
+            const labGroup = await this.findOrCreateCourseGroup(course, true);
 
             // Enroll student
             try {
@@ -411,9 +415,10 @@ export class StudentSeeder {
         // Enroll student in course
         await this.enrollStudentInCourse(studentUser, course, lab);
 
-        // Create exam schedule starting in 10 minutes from NOW
+        // Create exam schedule starting in 1 minutes from NOW
         const now = new Date();
-        const examDateTime = new Date(now.getTime() + 10 * 60 * 1000); // 10 minutes from now
+        now.setSeconds(0);
+        const examDateTime = new Date(now.getTime() + 1 * 60 * 1000); // 1 minutes from now
 
         // Create exam event with proper startDateTime
         const event = await this.createExamEvent(course, 'Upcoming Practical Exam', 120, examDateTime);
@@ -424,7 +429,8 @@ export class StudentSeeder {
         const examModeStartTime = new Date(examDateTime.getTime() - 30 * 60 * 1000);
         await this.eventScheduleRepo.update(eventSchedule.id, {
             examModeStartTime: examModeStartTime,
-            status: ExamStatus.EXAM_MODE_ACTIVE
+            status: ExamStatus.EXAM_MODE_ACTIVE,
+            autoStart: true
         });
 
         // Create student event schedule (exam mode should be active)
@@ -659,7 +665,7 @@ export class StudentSeeder {
             groupNumber: order,
             isDefault: isDefault,
             labId: labId as any || null,
-            capacity: isDefault ? 50 : 30
+            capacity: isDefault ? 0 : 30
         });
 
         const savedGroup = await this.courseGroupRepo.save(newGroup);
@@ -671,7 +677,8 @@ export class StudentSeeder {
 
     private async enrollStudentInCourse(studentUser: User, course: Course, lab: Lab) {
         // Create or find lab group for course using helper method
-        const labGroup = await this.findOrCreateCourseGroup(course, false, lab.id);
+        // const labGroup = await this.findOrCreateCourseGroup(course, false, lab.id);
+        const labGroup = await this.findOrCreateCourseGroup(course, true);
 
         // Enroll student
         try {
@@ -679,7 +686,7 @@ export class StudentSeeder {
                 studentId: studentUser.id,
                 courseId: course.id,
                 courseGroupId: labGroup.id,
-                groupNumber: labGroup.order
+                groupNumber: labGroup.groupNumber
             });
             await this.studentCourseRepo.save(enrollment);
             console.log(`✓ Enrolled ${studentUser.username} in course ${course.name} (${labGroup.id})`);
@@ -699,27 +706,20 @@ export class StudentSeeder {
             // Use provided startDateTime or default to 24 hours from now
             const defaultStartTime = startDateTime || new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-            // Randomly choose location type for variety
-            const locationTypes = [LocationType.LAB_DEVICES, LocationType.LECTURE_HALL, LocationType.ONLINE];
-            const randomLocationType = locationTypes[Math.floor(Math.random() * locationTypes.length)];
-            const isLabEvent = randomLocationType === LocationType.LAB_DEVICES;
-
             event = this.eventRepo.create({
                 name: eventName,
                 duration: duration,
                 eventType: EventType.EXAM,
-                locationType: randomLocationType,
-                customLocation: randomLocationType !== LocationType.LAB_DEVICES ?
-                    (randomLocationType === LocationType.ONLINE ? 'Zoom Meeting Room' : 'Main Lecture Hall A') :
-                    undefined,
+                locationType: LocationType.LAB_DEVICES,
                 hasMarks: true,
                 totalMarks: 20,
-                autoStart: Math.random() > 0.5, // Randomly assign auto-start
-                requiresModels: isLabEvent && Math.random() > 0.3, // Only lab events can require models, 70% chance
+                autoStart: true, // Randomly assign auto-start
+                requiresModels: true, // Only lab events can require models, 70% chance
                 examModeStartMinutes: 30, // Exam mode starts 30 minutes before exam
                 startDateTime: defaultStartTime,
                 description: `Test exam for course ${course.name}`,
                 courseId: course.id,
+                isExam: true,
             });
             event = await this.eventRepo.save(event);
             console.log(`📝 Created exam event "${eventName}" with startDateTime: ${defaultStartTime.toISOString()}`);
@@ -732,7 +732,7 @@ export class StudentSeeder {
     }
 
     private async createEventSchedule(event: Event, lab: Lab, assistant: User, examDateTime: Date, status: ExamStatus): Promise<EventSchedule> {
-        // Delete existing schedule for this event to avoid duplicates
+        await this.studentFilesRepo.delete({ eventId: event.id });
         await this.eventScheduleRepo.delete({ eventId: event.id });
 
         const eventSchedule = this.eventScheduleRepo.create({
@@ -743,6 +743,7 @@ export class StudentSeeder {
             status: status,
             maxStudents: 30,
             enrolledStudents: 1,
+            autoStart: true,
         });
 
         return await this.eventScheduleRepo.save(eventSchedule);

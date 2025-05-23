@@ -479,9 +479,7 @@ export class EventService extends BaseService<imports.Entity, imports.CreateDto,
 			.where('es.status = :status', { status: ExamStatus.SCHEDULED })
             .andWhere('e.isExam = true')
 			.andWhere('es.dateTime > :now', { now })
-			.andWhere('es.dateTime <= :examModeTime', {
-				examModeTime: new Date(now.getTime() + 35 * 60 * 1000), // 35 minutes buffer
-			})
+            .andWhere('es.dateTime <= DATE_ADD(:now, INTERVAL e.examModeStartMinutes MINUTE)', { now })
 			.select(['es.id', 'es.dateTime', 'e.examModeStartMinutes', 'e.name'])
 			.getRawMany();
 
@@ -542,7 +540,7 @@ export class EventService extends BaseService<imports.Entity, imports.CreateDto,
                 for (const studentSchedule of studentSchedules) {
                     try {
                         await this.examModelService.assignRandomExamModelToStudent(
-                            schedule.e_eventId,
+                            schedule.eventId,
                             studentSchedule.student_id
                         );
                     } catch (error) {
@@ -720,97 +718,6 @@ export class EventService extends BaseService<imports.Entity, imports.CreateDto,
 			submittedFiles: uploadedFiles,
 			submittedAt: submittedAt
 		};
-	}
-
-	/**
-	 * Upload multiple exam models for an event schedule
-	 */
-	async uploadExamModels(
-		eventScheduleId: UUID,
-		examModelFiles: Express.Multer.File[]
-	): Promise<{ message: string; uploadedModels: string[] }> {
-		const schedule = await this.eventScheduleRepository.findOneBy({ id: eventScheduleId });
-		if (!schedule) {
-			throw new NotFoundException('Event schedule not found');
-		}
-
-		// Upload exam model files
-		const uploadedModels: string[] = [];
-		for (const file of examModelFiles) {
-			const uploadResult = await this.fileService.uploadFile(file, {
-				prefix: `exam-models/${eventScheduleId}`,
-				isPublic: false
-			});
-			uploadedModels.push(uploadResult.url || uploadResult.objectName);
-		}
-
-		// Update event schedule with exam models
-		await this.eventScheduleRepository.update(
-			{ id: eventScheduleId },
-			{ examModels: JSON.stringify(uploadedModels) }
-		);
-
-		// Assign random exam models to students
-		await this.assignRandomExamModels(eventScheduleId, uploadedModels);
-
-		this.logger.log(`Uploaded ${examModelFiles.length} exam models for schedule ${eventScheduleId}`);
-
-		return {
-			message: 'Exam models uploaded and assigned successfully',
-			uploadedModels: uploadedModels
-		};
-	}
-
-	/**
-	 * Assign exam models to students based on event groups
-	 * Admin assigns models for each group, and each student gets a random model from their group
-	 */
-	private async assignRandomExamModels(eventScheduleId: UUID, examModels: string[]): Promise<void> {
-        if (examModels.length === 0) {
-            this.logger.warn(`No exam models to assign for schedule ${eventScheduleId}`);
-            return;
-        }
-
-        // Get the event schedule and its associated exam group
-        const schedule = await this.eventScheduleRepository.findOne({
-            where: { id: eventScheduleId },
-            relations: ['examGroup']
-        });
-
-        if (!schedule) {
-            throw new NotFoundException('Event schedule not found');
-        }
-
-        // Get all student schedules for this event schedule
-		const studentSchedules = await this.studentEventScheduleRepository.find({
-			where: { eventSchedule_id: eventScheduleId }
-		});
-
-        if (studentSchedules.length === 0) {
-            this.logger.warn(`No students enrolled in schedule ${eventScheduleId}`);
-            return;
-        }
-
-        // For each student in the group, assign a random model from the available models
-        // This allows each student to get a different model even within the same group
-		for (const studentSchedule of studentSchedules) {
-            // Assign a random model to each student
-            const randomModelIndex = Math.floor(Math.random() * examModels.length);
-            const assignedModel = examModels[randomModelIndex];
-
-			await this.studentEventScheduleRepository.update(
-				{
-					student_id: studentSchedule.student_id,
-					eventSchedule_id: eventScheduleId
-				},
-                {
-                    assignedExamModelUrl: assignedModel,
-                    examModel: `Model ${randomModelIndex + 1}` // Human-readable model name
-                }
-			);
-		}
-
-        this.logger.log(`Assigned random exam models to ${studentSchedules.length} students in schedule ${eventScheduleId}`);
 	}
 
 	/**
@@ -1782,77 +1689,6 @@ export class EventService extends BaseService<imports.Entity, imports.CreateDto,
     }
 
     /**
-     * Create exam models for an event
-     */
-    private async createExamModelsForEvent(eventId: UUID, examModels: imports.ExamModelForEventDto[]): Promise<string[]> {
-        // For now, return empty array as we'll implement this when we have the exam model system ready
-        this.logger.log(`Creating ${examModels.length} exam models for event ${eventId}`);
-        return [];
-    }
-
-    /**
-     * Create exam models from uploaded files
-     */
-    private async createExamModelsFromFiles(
-        eventId: UUID,
-        examModelFiles: Express.Multer.File[],
-        examModelData?: imports.ExamModelForEventDto[]
-    ): Promise<string[]> {
-        this.logger.log(`Creating exam models from ${examModelFiles.length} uploaded files for event ${eventId}`);
-
-        // Group files by model name (from form data)
-        const filesByModel = new Map<string, Express.Multer.File[]>();
-
-        // If we have exam model data from the form, use it to organize files
-        if (examModelData && examModelData.length > 0) {
-            examModelData.forEach((model, index) => {
-                filesByModel.set(model.name, []);
-            });
-
-            // Assign files to models based on naming convention or order
-            examModelFiles.forEach((file, index) => {
-                const modelIndex = Math.floor(index / Math.max(1, Math.floor(examModelFiles.length / examModelData.length)));
-                const modelName = examModelData[modelIndex]?.name || `Model ${String.fromCharCode(65 + modelIndex)}`;
-
-                if (!filesByModel.has(modelName)) {
-                    filesByModel.set(modelName, []);
-                }
-                filesByModel.get(modelName)!.push(file);
-            });
-        } else {
-            // Create models based on file grouping (A, B, C, etc.)
-            examModelFiles.forEach((file, index) => {
-                const modelLetter = String.fromCharCode(65 + Math.floor(index / Math.max(1, Math.floor(examModelFiles.length / 4)))); // Assume max 4 models
-                const modelName = `Model ${modelLetter}`;
-
-                if (!filesByModel.has(modelName)) {
-                    filesByModel.set(modelName, []);
-                }
-                filesByModel.get(modelName)!.push(file);
-            });
-        }
-
-        const createdModelIds: string[] = [];
-
-        // Create exam models (placeholder - implement actual exam model creation when ready)
-        for (const [modelName, files] of filesByModel.entries()) {
-            this.logger.log(`Creating model "${modelName}" with ${files.length} files`);
-
-            // TODO: Implement actual exam model creation with MinIO file upload
-            // For now, just log the file details
-            files.forEach(file => {
-                this.logger.log(`- File: ${file.originalname} (${file.size} bytes, ${file.mimetype})`);
-            });
-
-            // Generate a placeholder model ID
-            const modelId = `${eventId}-${modelName.toLowerCase().replace(' ', '-')}`;
-            createdModelIds.push(modelId);
-        }
-
-        return createdModelIds;
-    }
-
-    /**
      * Assign models to groups
      */
     private async assignModelsToGroups(eventId: UUID, assignments: imports.GroupModelAssignmentDto[], modelIds: string[]): Promise<void> {
@@ -2239,7 +2075,7 @@ export class EventService extends BaseService<imports.Entity, imports.CreateDto,
         for (const file of studentFiles) {
             const fileRecord = await file.file;
             fileDtos.push({
-                id: file.id.toString(),
+                id: file.fileId.toString(),
                 name: fileRecord.originalname,
                 url: fileRecord.objectName,
                 size: fileRecord.size,
@@ -2259,6 +2095,7 @@ export class EventService extends BaseService<imports.Entity, imports.CreateDto,
         scheduleId: UUID,
         fileId: string
     ): Promise<void> {
+        console.log(studentId, scheduleId, fileId);
         // Verify student is enrolled in this exam schedule and get the eventId
         const studentSchedule = await this.studentEventScheduleRepository.findOne({
             where: {

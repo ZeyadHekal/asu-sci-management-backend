@@ -4,7 +4,7 @@ import { UUID } from 'crypto';
 import { IPaginationOutput } from 'src/base/interfaces/interface.pagination.output';
 import { PaginationInput } from 'src/base/pagination.input';
 import { Entity, EventType, LocationType } from './imports';
-import { IsString, IsNumber, IsBoolean, IsUUID, IsOptional, IsArray, ValidateNested, IsDate, IsDateString, IsEnum, Allow } from 'class-validator';
+import { IsString, IsNumber, IsBoolean, IsUUID, IsOptional, IsArray, ValidateNested, IsDate, IsDateString, IsEnum, Allow, ArrayMinSize } from 'class-validator';
 
 export class CreateEventDto {
 	@ApiProperty()
@@ -713,6 +713,7 @@ export class ProposedGroupSimpleDto {
 
 	@ApiProperty({ description: 'Assistant IDs for this group', type: [String] })
 	@IsArray()
+	@ArrayMinSize(1)
 	@IsUUID('4', { each: true })
 	@Expose()
 	assistantIds: UUID[];

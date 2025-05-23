@@ -67,6 +67,7 @@ export class CourseService extends BaseService<imports.Entity, imports.CreateDto
 		const defaultGroup = this.courseGroupRepository.create({
 			courseId,
 			order: 999,
+			groupNumber: 999,
 			isDefault: true,
 			labId: null, // No lab assigned initially
 			capacity: 0, // Will be calculated when lab is assigned

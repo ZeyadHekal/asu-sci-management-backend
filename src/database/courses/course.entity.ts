@@ -98,7 +98,7 @@ export class SoftwareCourse extends OmitType(ManagementEntity, ['id']) {
 	course: Promise<Course>;
 	__course__?: Course;
 
-	@ManyToOne(() => Software, (ut) => ut.softwareCourses, { lazy: true })
+	@ManyToOne(() => Software, (ut) => ut.courses, { lazy: true })
 	@JoinColumn({ name: 'software_id' })
 	software: Promise<Software>;
 	__software__?: Software;

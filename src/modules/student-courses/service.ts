@@ -58,17 +58,19 @@ export class StudentCourseService {
 		}
 
 		// Find appropriate course group
-		const assignedGroup = await this.findAvailableCourseGroup(enrollDto.courseId);
+		let assignedGroup = await this.findAvailableCourseGroup(enrollDto.courseId);
+		if (!assignedGroup) {
+			assignedGroup = await this.courseGroupRepository.findOne({ where: { courseId: enrollDto.courseId, isDefault: true } });
+		}
 		if (!assignedGroup) {
 			throw new BadRequestException('No available course groups found for this course!');
 		}
-
 		// Create enrollment
 		const studentCourse = new imports.Entity();
 		studentCourse.studentId = enrollDto.studentId;
 		studentCourse.courseId = enrollDto.courseId;
 		studentCourse.courseGroupId = assignedGroup.id;
-		studentCourse.groupNumber = assignedGroup.order;
+		studentCourse.groupNumber = assignedGroup.groupNumber;
 
 		const savedEnrollment = await this.repository.save(studentCourse);
 		return transformToInstance(imports.GetDto, savedEnrollment);

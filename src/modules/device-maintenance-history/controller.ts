@@ -20,7 +20,7 @@ import {
 import { MaintenanceHistoryPaginationInput } from './dtos';
 
 @ApiTags('device-maintenance-history')
-@RequirePrivileges({ and: [PrivilegeCode.MANAGE_SYSTEM] })
+@RequirePrivileges({ or: [PrivilegeCode.MANAGE_SYSTEM, PrivilegeCode.MANAGE_LABS, PrivilegeCode.LAB_MAINTENANCE, PrivilegeCode.LAB_ASSISTANT] })
 @Controller(constants.plural_name)
 export class MaintenanceHistoryController {
     constructor(public readonly service: Service) { }

@@ -6,6 +6,8 @@ import * as imports from './imports';
 import { Device } from 'src/database/devices/device.entity';
 import { User } from 'src/database/users/user.entity';
 import { DeviceReport } from 'src/database/devices/devices_reports.entity';
+import { DeviceSoftware } from 'src/database/devices/devices_softwares.entity';
+import { Software } from 'src/database/softwares/software.entity';
 import { transformToInstance } from 'src/base/transformToInstance';
 import { MaintenanceHistoryPaginationInput } from './dtos';
 import { UUID } from 'crypto';
@@ -17,6 +19,8 @@ export class MaintenanceHistoryService {
         @InjectRepository(Device) private readonly deviceRepository: Repository<Device>,
         @InjectRepository(User) private readonly userRepository: Repository<User>,
         @InjectRepository(DeviceReport) private readonly reportRepository: Repository<DeviceReport>,
+        @InjectRepository(DeviceSoftware) private readonly deviceSoftwareRepository: Repository<DeviceSoftware>,
+        @InjectRepository(Software) private readonly softwareRepository: Repository<Software>,
     ) { }
 
     // Helper method to update related report status
@@ -57,12 +61,52 @@ export class MaintenanceHistoryService {
         }
     }
 
+    // Helper method to update device status
+    private async updateDeviceStatus(maintenanceRecord: imports.Entity): Promise<void> {
+        if (maintenanceRecord.deviceHasIssue !== undefined) {
+            const device = await this.deviceRepository.findOneBy({ id: maintenanceRecord.deviceId });
+            if (device) {
+                device.hasIssue = maintenanceRecord.deviceHasIssue;
+                await this.deviceRepository.save(device);
+            }
+        }
+    }
+
+    // Helper method to update software status
+    private async updateSoftwareStatus(maintenanceRecord: imports.Entity): Promise<void> {
+        if (maintenanceRecord.softwareId && maintenanceRecord.softwareHasIssue !== undefined) {
+            const deviceSoftware = await this.deviceSoftwareRepository.findOne({
+                where: {
+                    deviceId: maintenanceRecord.deviceId,
+                    softwareId: maintenanceRecord.softwareId
+                }
+            });
+
+            if (deviceSoftware) {
+                deviceSoftware.hasIssue = maintenanceRecord.softwareHasIssue;
+                if (maintenanceRecord.softwareHasIssue && maintenanceRecord.description) {
+                    deviceSoftware.issueDescription = maintenanceRecord.description;
+                } else if (!maintenanceRecord.softwareHasIssue) {
+                    deviceSoftware.issueDescription = null;
+                }
+                await this.deviceSoftwareRepository.save(deviceSoftware);
+            }
+        }
+    }
+
     async create(createDto: imports.CreateDto): Promise<imports.GetDto> {
+        console.log(createDto);
         const maintenance = this.repository.create(createDto);
         const savedMaintenance = await this.repository.save(maintenance);
 
         // Update related report status if applicable
         await this.updateRelatedReportStatus(savedMaintenance);
+
+        // Update device status if specified
+        await this.updateDeviceStatus(savedMaintenance);
+
+        // Update software status if specified
+        await this.updateSoftwareStatus(savedMaintenance);
 
         return this.getById((savedMaintenance as any).id);
     }
@@ -218,6 +262,12 @@ export class MaintenanceHistoryService {
 
         // Update related report status if applicable
         await this.updateRelatedReportStatus(updatedMaintenance);
+
+        // Update device status if specified
+        await this.updateDeviceStatus(updatedMaintenance);
+
+        // Update software status if specified
+        await this.updateSoftwareStatus(updatedMaintenance);
 
         return this.getById(id);
     }

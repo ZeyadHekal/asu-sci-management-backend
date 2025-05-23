@@ -28,7 +28,4 @@ export class Software extends ManagementEntity {
 	})
 	@JoinTable({ name: 'course_softwares' })
 	courses: Promise<Course[]>;
-
-	softwareCourses: Promise<SoftwareCourse[]>;
-	__softwareCourses__?: SoftwareCourse[];
 }

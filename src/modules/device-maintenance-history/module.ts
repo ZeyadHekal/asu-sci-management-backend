@@ -6,9 +6,11 @@ import { DeviceMaintenanceHistory } from 'src/database/devices/device-maintenanc
 import { Device } from 'src/database/devices/device.entity';
 import { User } from 'src/database/users/user.entity';
 import { DeviceReport } from 'src/database/devices/devices_reports.entity';
+import { DeviceSoftware } from 'src/database/devices/devices_softwares.entity';
+import { Software } from 'src/database/softwares/software.entity';
 
 @Module({
-    imports: [TypeOrmModule.forFeature([DeviceMaintenanceHistory, Device, User, DeviceReport])],
+    imports: [TypeOrmModule.forFeature([DeviceMaintenanceHistory, Device, User, DeviceReport, DeviceSoftware, Software])],
     controllers: [MaintenanceHistoryController],
     providers: [MaintenanceHistoryService],
     exports: [MaintenanceHistoryService],

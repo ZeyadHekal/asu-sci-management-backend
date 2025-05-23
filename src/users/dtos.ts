@@ -291,6 +291,12 @@ export class DoctorPagedDto implements IPaginationOutput<DoctorDto> {
 }
 
 export class StaffPaginationInput extends PaginationInput {
+	@ApiProperty({ required: false, description: 'Search by name, username, title, or department' })
+	@IsOptional()
+	@IsString()
+	@Expose()
+	search?: string;
+
 	@ApiProperty({ required: false, description: 'Filter by department' })
 	@IsOptional()
 	@IsString()
@@ -302,17 +308,6 @@ export class StaffPaginationInput extends PaginationInput {
 	@IsString()
 	@Expose()
 	userType?: string;
-
-	@ApiProperty({ required: false, description: 'Filter by user status' })
-	@IsOptional()
-	@IsBoolean()
-	@Transform(({ value }) => {
-		if (value === 'true' || value === true) return true;
-		if (value === 'false' || value === false) return false;
-		return undefined;
-	})
-	@Expose()
-	status?: boolean;
 }
 
 export class UpdateUserPrivilegesDto {

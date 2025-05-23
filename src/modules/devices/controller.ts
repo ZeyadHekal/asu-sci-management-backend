@@ -27,7 +27,7 @@ import { CurrentUser } from 'src/auth/decorators';
 import { User } from 'src/database/users/user.entity';
 
 @ApiTags('devices')
-@RequirePrivileges({ and: [PrivilegeCode.MANAGE_LABS] })
+	@RequirePrivileges({ or: [PrivilegeCode.MANAGE_LABS, PrivilegeCode.LAB_MAINTENANCE] })
 @Controller(constants.plural_name)
 export class DeviceController extends BaseController<Entity, CreateDto, UpdateDto, GetDto, GetListDto> {
 	constructor(public readonly service: Service) {
@@ -35,6 +35,7 @@ export class DeviceController extends BaseController<Entity, CreateDto, UpdateDt
 	}
 
 	@Post()
+	@RequirePrivileges({ and: [PrivilegeCode.MANAGE_LABS] })
 	@ApiOperation({ summary: 'Create device', description: 'Create a new device' })
 	@ApiResponse({ type: GetDto, status: 201, description: 'Device created successfully' })
 	@ApiResponse({ status: 400, description: 'Bad Request - Invalid data' })
@@ -109,6 +110,7 @@ export class DeviceController extends BaseController<Entity, CreateDto, UpdateDt
 	}
 
 	@Delete(':' + constants.entity_ids)
+	@RequirePrivileges({ and: [PrivilegeCode.MANAGE_LABS] })
 	@ApiOperation({ summary: 'Delete devices', description: 'Delete one or multiple devices by IDs' })
 	@ApiParam({ name: constants.entity_ids, description: 'Comma-separated device IDs', type: 'string' })
 	@ApiResponse({ type: DeleteDto, status: 200, description: 'Devices deleted successfully' })
@@ -133,38 +135,41 @@ export class DeviceController extends BaseController<Entity, CreateDto, UpdateDt
 
 	// Get device reports
 	@Get(`:${constants.entity_id}/reports`)
+	@RequirePrivileges({ or: [PrivilegeCode.MANAGE_LABS, PrivilegeCode.LAB_MAINTENANCE, PrivilegeCode.LAB_ASSISTANT] })
 	@ApiOperation({ summary: 'Get device reports', description: 'Retrieve all reports for a specific device' })
 	@ApiParam({ name: constants.entity_id, description: 'Device ID', type: 'string' })
 	@ApiResponse({ status: 200, description: 'Device reports retrieved successfully' })
 	@ApiResponse({ status: 401, description: 'Unauthorized' })
 	@ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
 	@ApiResponse({ status: 404, description: 'Not Found - Device does not exist' })
-	async getDeviceReports(@Param(constants.entity_id) id: UUID, @Query() input: PaginationInput): Promise<any> {
-		return this.service.getDeviceReports(id, input);
+	async getDeviceReports(@Param(constants.entity_id) id: UUID, @Query() input: PaginationInput, @CurrentUser() user: User): Promise<any> {
+		return this.service.getDeviceReports(id, input, user);
 	}
 
 	// Get device maintenance history
 	@Get(`:${constants.entity_id}/maintenance-history`)
+	@RequirePrivileges({ or: [PrivilegeCode.MANAGE_LABS, PrivilegeCode.LAB_MAINTENANCE, PrivilegeCode.LAB_ASSISTANT] })
 	@ApiOperation({ summary: 'Get device maintenance history', description: 'Retrieve maintenance history for a specific device' })
 	@ApiParam({ name: constants.entity_id, description: 'Device ID', type: 'string' })
 	@ApiResponse({ status: 200, description: 'Device maintenance history retrieved successfully' })
 	@ApiResponse({ status: 401, description: 'Unauthorized' })
 	@ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
 	@ApiResponse({ status: 404, description: 'Not Found - Device does not exist' })
-	async getDeviceMaintenanceHistory(@Param(constants.entity_id) id: UUID, @Query() input: PaginationInput): Promise<any> {
-		return this.service.getDeviceMaintenanceHistory(id, input);
+	async getDeviceMaintenanceHistory(@Param(constants.entity_id) id: UUID, @Query() input: PaginationInput, @CurrentUser() user: User): Promise<any> {
+		return this.service.getDeviceMaintenanceHistory(id, input, user);
 	}
 
 	// Get device login history
 	@Get(`:${constants.entity_id}/login-history`)
+	@RequirePrivileges({ or: [PrivilegeCode.MANAGE_LABS, PrivilegeCode.LAB_MAINTENANCE, PrivilegeCode.LAB_ASSISTANT] })
 	@ApiOperation({ summary: 'Get device login history', description: 'Retrieve login history for a specific device based on IP address' })
 	@ApiParam({ name: constants.entity_id, description: 'Device ID', type: 'string' })
 	@ApiResponse({ status: 200, description: 'Device login history retrieved successfully' })
 	@ApiResponse({ status: 401, description: 'Unauthorized' })
 	@ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
 	@ApiResponse({ status: 404, description: 'Not Found - Device does not exist' })
-	async getDeviceLoginHistory(@Param(constants.entity_id) id: UUID, @Query() input: PaginationInput): Promise<any> {
-		return this.service.getDeviceLoginHistory(id, input);
+	async getDeviceLoginHistory(@Param(constants.entity_id) id: UUID, @Query() input: PaginationInput, @CurrentUser() user: User): Promise<any> {
+		return this.service.getDeviceLoginHistory(id, input, user);
 	}
 
 	@Post(`:${constants.entity_id}/softwares`)

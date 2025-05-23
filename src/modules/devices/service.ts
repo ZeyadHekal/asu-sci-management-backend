@@ -125,6 +125,71 @@ export class DeviceService extends BaseService<imports.Entity, imports.CreateDto
 		}
 	}
 
+	/**
+	 * Checks if a LAB_ASSISTANT user has access to a specific device
+	 * LAB_ASSISTANT users can only access devices from labs they're assigned to
+	 * @param user The user requesting access
+	 * @param deviceId The device ID to check access for
+	 * @returns true if user has access, false otherwise
+	 */
+	private async canLabAssistantAccessDevice(user: User, deviceId: UUID): Promise<boolean> {
+		// Get user privileges
+		const userPrivileges = await this.getUserPrivileges(user);
+
+		// If user has MANAGE_LABS or LAB_MAINTENANCE, they can access all devices
+		if (userPrivileges.includes(PrivilegeCode.MANAGE_LABS) || userPrivileges.includes(PrivilegeCode.LAB_MAINTENANCE)) {
+			return true;
+		}
+
+		// If user doesn't have LAB_ASSISTANT privilege, deny access
+		if (!userPrivileges.includes(PrivilegeCode.LAB_ASSISTANT)) {
+			return false;
+		}
+
+		// Get the device and check if user is assigned as assistant to that lab
+		const device = await this.repository.findOne({
+			where: { id: deviceId },
+			relations: ['lab']
+		});
+
+		return device.assisstantId === user.id;
+	}
+
+	/**
+	 * Gets all privileges for a user (both direct and through user type)
+	 * @param user The user to get privileges for
+	 * @returns Array of privilege codes
+	 */
+	private async getUserPrivileges(user: User): Promise<PrivilegeCode[]> {
+		const privileges: PrivilegeCode[] = [];
+
+		// Get direct user privileges
+		const directPrivileges = await this.userPrivilegeRepository.find({
+			where: { user_id: user.id },
+			relations: ['privilege']
+		});
+
+		for (const userPrivilege of directPrivileges) {
+			const privilege = await userPrivilege.privilege;
+			privileges.push(privilege.code as PrivilegeCode);
+		}
+
+		// Get user type privileges
+		const userTypePrivileges = await this.userTypePrivilegeRepository.find({
+			where: { user_type_id: user.userTypeId },
+			relations: ['privilege']
+		});
+
+		for (const userTypePrivilege of userTypePrivileges) {
+			const privilege = await userTypePrivilege.privilege;
+			if (!privileges.includes(privilege.code as PrivilegeCode)) {
+				privileges.push(privilege.code as PrivilegeCode);
+			}
+		}
+
+		return privileges;
+	}
+
 	async beforeUpdate(id: UUID, updateDto: imports.UpdateDto): Promise<imports.UpdateDto> {
 		// Validate assistant has LAB_ASSISTANT privilege if being updated
 		if (updateDto.assisstantId) {
@@ -204,9 +269,9 @@ export class DeviceService extends BaseService<imports.Entity, imports.CreateDto
 		}
 
 		if (status) {
-			if (status.toLowerCase() === 'working') {
+			if (status.toLowerCase() === 'Working') {
 				query.andWhere('device.hasIssue = :hasIssue', { hasIssue: false });
-			} else if (status.toLowerCase() === 'has issues') {
+			} else if (status.toLowerCase() === 'Has Issues') {
 				query.andWhere('device.hasIssue = :hasIssue', { hasIssue: true });
 			}
 		}
@@ -284,21 +349,21 @@ export class DeviceService extends BaseService<imports.Entity, imports.CreateDto
 
 		// Query for softwares with pagination
 		const query1 = await this.deviceSoftwareRepository
-			.createQueryBuilder('deviceSoftware')
-			.where('deviceSoftware.deviceId = :id', { id })
-			.leftJoin('deviceSoftware.software', 'software')
+			.createQueryBuilder('ds')
+			.where('ds.deviceId = :id', { id })
+			.leftJoin('softwares', 's', 's.id = ds.software_id')
+			.select(['ds.software_id', 'ds.hasIssue', 's.name'])
 			.skip(skip)
 			.take(limit);
 		const total = await query1.getCount();
 		const deviceSoftwares = await query1.getRawMany();
-		// TODO: Remove this
 		console.log(deviceSoftwares);
 		// Transform to DTOs
 		const items = deviceSoftwares.map((devSoft: any) =>
 			transformToInstance(DeviceSoftwareListDto, {
-				id: devSoft.software.id,
-				name: devSoft.software.name,
-				hasIssues: devSoft.hasIssues,
+				id: devSoft.software_id,
+				name: devSoft.s_name,
+				hasIssue: devSoft.ds_has_issue,
 			}),
 		);
 
@@ -433,11 +498,17 @@ export class DeviceService extends BaseService<imports.Entity, imports.CreateDto
 	}
 
 	// Get device reports
-	async getDeviceReports(id: UUID, input: PaginationInput): Promise<any> {
+	async getDeviceReports(id: UUID, input: PaginationInput, user: User): Promise<any> {
 		// Check if device exists
 		const device = await this.repository.findOneBy({ id });
 		if (!device) {
 			throw new NotFoundException('Device not found');
+		}
+
+		// Check if LAB_ASSISTANT user has access to this device
+		const hasAccess = await this.canLabAssistantAccessDevice(user, id);
+		if (!hasAccess) {
+			throw new NotFoundException('Device not found or access denied');
 		}
 
 		// Convert PaginationInput to DeviceReportPaginationInput and delegate to DeviceReportService
@@ -450,11 +521,17 @@ export class DeviceService extends BaseService<imports.Entity, imports.CreateDto
 	}
 
 	// Get device maintenance history
-	async getDeviceMaintenanceHistory(id: UUID, input: PaginationInput): Promise<any> {
+	async getDeviceMaintenanceHistory(id: UUID, input: PaginationInput, user: User): Promise<any> {
 		// Check if device exists
 		const device = await this.repository.findOneBy({ id });
 		if (!device) {
 			throw new NotFoundException('Device not found');
+		}
+
+		// Check if LAB_ASSISTANT user has access to this device
+		const hasAccess = await this.canLabAssistantAccessDevice(user, id);
+		if (!hasAccess) {
+			throw new NotFoundException('Device not found or access denied');
 		}
 
 		// Convert PaginationInput to MaintenanceHistoryPaginationInput and delegate to MaintenanceHistoryService
@@ -467,11 +544,17 @@ export class DeviceService extends BaseService<imports.Entity, imports.CreateDto
 	}
 
 	// Get device login history
-	async getDeviceLoginHistory(id: UUID, input: PaginationInput): Promise<any> {
+	async getDeviceLoginHistory(id: UUID, input: PaginationInput, user: User): Promise<any> {
 		// Check if device exists
 		const device = await this.repository.findOneBy({ id });
 		if (!device) {
 			throw new NotFoundException('Device not found');
+		}
+
+		// Check if LAB_ASSISTANT user has access to this device
+		const hasAccess = await this.canLabAssistantAccessDevice(user, id);
+		if (!hasAccess) {
+			throw new NotFoundException('Device not found or access denied');
 		}
 
 		// Convert PaginationInput to LoginHistoryPaginationInput and delegate to DeviceLoginHistoryService
@@ -575,7 +658,7 @@ export class DeviceService extends BaseService<imports.Entity, imports.CreateDto
 			status: MaintenanceStatus.COMPLETED,
 			description: dto.description || `Device status updated to ${dto.status}`,
 			resolutionNotes: dto.resolutionNotes,
-			involvedPersonnel: [userId],
+			involvedPersonnel: dto.involvedPersonnel,
 			completedAt: new Date(),
 		};
 

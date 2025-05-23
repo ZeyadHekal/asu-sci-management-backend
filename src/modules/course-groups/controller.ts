@@ -128,9 +128,13 @@ export class CourseGroupController {
 	}
 
 	@Delete(':id')
-	@imports.ApiOperation({ summary: `Delete a ${imports.constants.singular_name}` })
+	@imports.ApiOperation({
+		summary: `Delete a ${imports.constants.singular_name}`,
+		description: 'Delete a course group. All students enrolled in this group will be automatically moved to the default group of the same course. Default groups cannot be deleted.'
+	})
 	@imports.ApiParam({ name: 'id', type: 'string' })
-	@imports.ApiResponse({ status: 200, description: 'Course group deleted successfully.', type: imports.DeleteDto })
+	@imports.ApiResponse({ status: 200, description: 'Course group deleted successfully and all students moved to default group.', type: imports.DeleteDto })
+	@imports.ApiResponse({ status: 400, description: 'Cannot delete default groups.' })
 	@imports.ApiResponse({ status: 404, description: 'Course group not found.' })
 	async delete(@Param('id') id: imports.UUID): Promise<imports.DeleteDto> {
 		return this.service.delete([id]);

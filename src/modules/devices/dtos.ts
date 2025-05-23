@@ -304,4 +304,10 @@ export class MaintenanceUpdateDto {
 	@IsString()
 	@Expose()
 	resolutionNotes?: string;
+
+	@ApiProperty({ required: false, description: 'Involved personnel' })
+	@IsOptional()
+	@IsString()
+	@Expose()
+	involvedPersonnel?: string;
 }

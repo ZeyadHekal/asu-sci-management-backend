@@ -3,8 +3,8 @@ import { ManagementEntity } from 'src/base/base.entity';
 import { Expose } from 'class-transformer';
 import { UUID } from 'crypto';
 import { Device } from './device.entity';
-import { User } from '../users/user.entity';
 import { DeviceReport } from './devices_reports.entity';
+import { Software } from '../softwares/software.entity';
 
 export enum MaintenanceType {
     HARDWARE_REPAIR = 'HARDWARE_REPAIR',
@@ -14,6 +14,7 @@ export enum MaintenanceType {
     INSPECTION = 'INSPECTION',
     CALIBRATION = 'CALIBRATION',
     OTHER = 'OTHER',
+    USER_REPORT = 'USER_REPORT',
 }
 
 export enum MaintenanceStatus {
@@ -64,7 +65,19 @@ export class DeviceMaintenanceHistory extends ManagementEntity {
 
     @Column({ type: 'text', nullable: true })
     @Expose()
-    involvedPersonnel?: string[];
+    involvedPersonnel?: string;
+
+    @Column({ nullable: true, name: 'software_id' })
+    @Expose()
+    softwareId?: UUID;
+
+    @Column({ type: 'boolean', nullable: true, name: 'software_has_issue' })
+    @Expose()
+    softwareHasIssue?: boolean;
+
+    @Column({ type: 'boolean', nullable: true, name: 'device_has_issue' })
+    @Expose()
+    deviceHasIssue?: boolean;
 
     @ManyToOne(() => Device, { nullable: false, lazy: true, onDelete: 'RESTRICT', onUpdate: 'CASCADE' })
     @JoinColumn({ name: 'device_id' })
@@ -73,4 +86,8 @@ export class DeviceMaintenanceHistory extends ManagementEntity {
     @ManyToOne(() => DeviceReport, { nullable: true, lazy: true, onDelete: 'SET NULL', onUpdate: 'CASCADE' })
     @JoinColumn({ name: 'related_report_id' })
     relatedReport?: Promise<DeviceReport>;
+
+    @ManyToOne(() => Software, { nullable: true, lazy: true, onDelete: 'SET NULL', onUpdate: 'CASCADE' })
+    @JoinColumn({ name: 'software_id' })
+    software?: Promise<Software>;
 } 

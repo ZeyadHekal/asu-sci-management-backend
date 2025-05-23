@@ -155,7 +155,7 @@ export class UserController extends BaseController<Entity, CreateDto, UpdateDto,
 	@ApiOperation({
 		summary: 'Get paginated staff',
 		description:
-			'Retrieve staff with pagination and filtering. Available filters: department (string), userType (string), status (boolean). Example: ?page=0&limit=10&department=Computer%20Science&userType=Doctor&status=true',
+			'Retrieve staff with pagination, search, and filtering. Available search: name, username, title, department. Available filters: department (string), userType (string). Example: ?page=0&limit=10&search=john&department=Computer%20Science&userType=Doctor',
 	})
 	@ApiResponse({ type: StaffPagedDto, status: 200, description: 'Paginated staff retrieved successfully' })
 	@ApiResponse({ status: 401, description: 'Unauthorized' })

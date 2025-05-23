@@ -1,6 +1,6 @@
 import { ApiProperty, OmitType, PartialType } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
-import { IsString, IsUUID, IsOptional, IsEnum, IsNumber, IsDateString, IsArray, IsISO8601 } from 'class-validator';
+import { IsString, IsUUID, IsOptional, IsEnum, IsNumber, IsDateString, IsArray, IsISO8601, IsBoolean } from 'class-validator';
 import { UUID } from 'crypto';
 import { IPaginationOutput } from 'src/base/interfaces/interface.pagination.output';
 import { PaginationInput } from 'src/base/pagination.input';
@@ -49,7 +49,25 @@ export class CreateMaintenanceHistoryDto {
     @IsArray()
     @IsString({ each: true })
     @Expose()
-    involvedPersonnel?: string[];
+    involvedPersonnel: string;
+
+    @ApiProperty({ description: 'Software ID for software-related maintenance', required: false })
+    @IsOptional()
+    @IsUUID()
+    @Expose()
+    softwareId?: UUID;
+
+    @ApiProperty({ description: 'Software status after maintenance (true = has issue, false = no issue)', required: false })
+    @IsOptional()
+    @IsBoolean()
+    @Expose()
+    softwareHasIssue?: boolean;
+
+    @ApiProperty({ description: 'Device status after maintenance (true = has issue, false = no issue)', required: false })
+    @IsOptional()
+    @IsBoolean()
+    @Expose()
+    deviceHasIssue?: boolean;
 }
 
 export class UpdateMaintenanceHistoryDto extends PartialType(CreateMaintenanceHistoryDto) { }
