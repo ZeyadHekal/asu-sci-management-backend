@@ -1,17 +1,38 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, HttpCode, HttpStatus } from '@nestjs/common';
 import {
-	Entity, CreateDto, UpdateDto, GetDto, GetListDto, DeleteDto,
-	PaginationInput, IPaginationOutput, PagedDto,
-	BaseController, Service, constants, UUID,
-	ApiResponse, ApiOperation, ApiTags, ApiParam,
-	RequirePrivileges, PrivilegeCode,
+	Entity,
+	CreateDto,
+	UpdateDto,
+	GetDto,
+	GetListDto,
+	DeleteDto,
+	PaginationInput,
+	IPaginationOutput,
+	PagedDto,
+	BaseController,
+	Service,
+	constants,
+	UUID,
+	ApiResponse,
+	ApiOperation,
+	ApiTags,
+	ApiParam,
+	RequirePrivileges,
+	PrivilegeCode,
 } from './imports';
+import { EventService, GroupCalculationResult, ExamModeStatus } from './service';
+import * as dtos from './dtos';
+import { CurrentUser } from 'src/auth/decorators';
+import { User } from 'src/database/users/user.entity';
 
 @ApiTags('events')
 @RequirePrivileges({ and: [PrivilegeCode.MANAGE_USERS] })
-	@Controller(constants.plural_name)
+@Controller(constants.plural_name)
 export class EventController extends BaseController<Entity, CreateDto, UpdateDto, GetDto, GetListDto> {
-	constructor(public readonly service: Service) {
+	constructor(
+		public readonly service: Service,
+		private readonly eventService: EventService,
+	) {
 		super(service, Entity, CreateDto, UpdateDto, GetDto, GetListDto);
 	}
 
@@ -75,5 +96,55 @@ export class EventController extends BaseController<Entity, CreateDto, UpdateDto
 	@ApiResponse({ status: 404, description: 'Not Found - One or more events do not exist' })
 	delete(@Param(constants.entity_ids) ids: string): Promise<DeleteDto> {
 		return super.delete(ids);
+	}
+
+	@Get(':id/calculate-groups')
+	@ApiOperation({ summary: 'Calculate optimal exam groups and lab requirements' })
+	@ApiParam({ name: 'id', description: 'Event ID' })
+	@ApiResponse({ status: 200, description: 'Group calculation completed', type: dtos.GroupCalculationResultDto })
+	async calculateGroups(@Param('id') id: UUID): Promise<GroupCalculationResult> {
+		return await this.eventService.calculateExamGroups(id);
+	}
+
+	@Post(':id/create-groups')
+	@ApiOperation({ summary: 'Create exam groups and schedules' })
+	@ApiParam({ name: 'id', description: 'Event ID' })
+	@ApiResponse({ status: 201, description: 'Exam groups and schedules created successfully' })
+	@HttpCode(HttpStatus.CREATED)
+	async createGroups(@Param('id') id: UUID, @Body() createGroupsDto: dtos.CreateExamGroupsDto) {
+		await this.eventService.createExamGroupsAndSchedules(id, createGroupsDto.schedules);
+		return { message: 'Exam groups and schedules created successfully' };
+	}
+
+	@Post(':scheduleId/start')
+	@ApiOperation({ summary: 'Start exam manually' })
+	@ApiParam({ name: 'scheduleId', description: 'Event Schedule ID' })
+	@ApiResponse({ status: 200, description: 'Exam started successfully' })
+	async startExam(@Param('scheduleId') scheduleId: UUID, @CurrentUser() user: User) {
+		await this.eventService.startExam(scheduleId, user.id);
+		return { message: 'Exam started successfully' };
+	}
+
+	@Post(':scheduleId/end')
+	@ApiOperation({ summary: 'End exam manually' })
+	@ApiParam({ name: 'scheduleId', description: 'Event Schedule ID' })
+	@ApiResponse({ status: 200, description: 'Exam ended successfully' })
+	async endExam(@Param('scheduleId') scheduleId: UUID, @CurrentUser() user: User) {
+		await this.eventService.endExam(scheduleId, user.id);
+		return { message: 'Exam ended successfully' };
+	}
+
+	@Get('student/exam-mode-status')
+	@ApiOperation({ summary: 'Get student exam mode status' })
+	@ApiResponse({ status: 200, description: 'Exam mode status retrieved', type: dtos.ExamModeStatusDto })
+	async getStudentExamModeStatus(@CurrentUser() user: User): Promise<ExamModeStatus> {
+		return await this.eventService.getStudentExamModeStatus(user.id);
+	}
+
+	@Get('student/schedule-ids')
+	@ApiOperation({ summary: 'Get event schedule IDs for WebSocket listening' })
+	@ApiResponse({ status: 200, description: 'Schedule IDs retrieved', type: [String] })
+	async getStudentScheduleIds(@CurrentUser() user: User): Promise<UUID[]> {
+		return await this.eventService.getStudentEventScheduleIds(user.id);
 	}
 }

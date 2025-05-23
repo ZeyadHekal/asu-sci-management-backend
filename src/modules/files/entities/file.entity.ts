@@ -2,42 +2,36 @@ import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateCol
 
 @Entity('files')
 export class File {
-    @PrimaryGeneratedColumn()
-    id: number;
+	@PrimaryGeneratedColumn()
+	id: number;
 
-    @Column()
-    filename: string;
+	@Column()
+	filename: string;
 
-    @Column()
-    originalname: string;
+	@Column()
+	originalname: string;
 
-    @Column()
-    mimetype: string;
+	@Column()
+	mimetype: string;
 
-    @Column()
-    size: number;
+	@Column()
+	size: number;
 
-    @Column()
-    objectName: string;
+	@Column()
+	objectName: string;
 
-    @Column({ nullable: true })
-    prefix: string;
+	@Column({ nullable: true })
+	prefix: string;
 
-    @Column()
-    bucket: string;
+	@Column()
+	bucket: string;
 
-    @Column({ nullable: true })
-    category: string;
+	@Column({ default: false })
+	isPublic: boolean;
 
-    @Column({ nullable: true })
-    description: string;
+	@CreateDateColumn()
+	createdAt: Date;
 
-    @Column({ default: false })
-    isPublic: boolean;
-
-    @CreateDateColumn()
-    createdAt: Date;
-
-    @UpdateDateColumn()
-    updatedAt: Date;
-} 
+	@UpdateDateColumn()
+	updatedAt: Date;
+}

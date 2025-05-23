@@ -8,7 +8,8 @@ import { PaginationInput } from './pagination.input';
 import { IPaginationOutput } from './interfaces/interface.pagination.output';
 
 export class BaseController<Entity extends ManagementEntity, CreateDto, UpdateDto, GetDto, GetListDto, PageInput extends PaginationInput = PaginationInput>
-	implements IBaseController<Entity, CreateDto, UpdateDto, GetDto, GetListDto, PageInput> {
+	implements IBaseController<Entity, CreateDto, UpdateDto, GetDto, GetListDto, PageInput>
+{
 	constructor(
 		public service: IService<Entity, CreateDto, UpdateDto, GetDto, GetListDto, PageInput>,
 		private entity: new () => Entity,
@@ -16,7 +17,7 @@ export class BaseController<Entity extends ManagementEntity, CreateDto, UpdateDt
 		private updateDto: new () => UpdateDto,
 		private getDto: new () => GetDto,
 		private getListDto: new () => GetListDto,
-	) { }
+	) {}
 
 	create(@Body() createDto: CreateDto): Promise<GetDto> {
 		return this.service.create(createDto);

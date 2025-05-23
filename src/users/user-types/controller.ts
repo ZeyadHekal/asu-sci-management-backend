@@ -1,17 +1,17 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { UserTypeService } from './service';
-import { CreateUserTypeDto, UpdateUserTypeDto, UserTypeDto, UserTypeWithPrivilegeDto } from './dtos';
+import { CreateUserTypeDto, UpdateUserTypeDto, UserTypeDto, UserTypeWithPrivilegeDto, UserTypePagedDto } from './dtos';
 import { UUID } from 'crypto';
 import { BaseController } from 'src/base/base.controller';
 import { UserType } from 'src/database/users/user-type.entity';
 import { RequirePrivileges } from 'src/privileges/guard/decorator';
-import { PrivilegeCode } from 'src/privileges/definition';
+import { PrivilegeCode } from 'src/db-seeder/data/privileges';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { DeleteDto } from 'src/base/delete.dto';
 import { PrivilegeAssignmentDto } from 'src/privileges/dtos';
 
 @ApiTags('user-types')
-	@RequirePrivileges({ and: [PrivilegeCode.MANAGE_SYSTEM] })
+@RequirePrivileges({ and: [PrivilegeCode.MANAGE_SYSTEM] })
 @Controller('user-types')
 export class UserTypeController extends BaseController<UserType, CreateUserTypeDto, UpdateUserTypeDto, UserTypeDto, UserTypeDto> {
 	constructor(private readonly userTypeService: UserTypeService) {
@@ -39,12 +39,15 @@ export class UserTypeController extends BaseController<UserType, CreateUserTypeD
 	}
 
 	@Get('with-privileges')
-	@ApiOperation({ summary: 'Get all user types with privileges', description: 'Retrieve all user types with their associated privileges' })
-	@ApiResponse({ type: UserTypeWithPrivilegeDto, isArray: true, status: 200, description: 'User types with privileges retrieved successfully' })
+	@ApiOperation({
+		summary: 'Get all user types with privileges',
+		description: 'Retrieve all user types with their associated privileges, with search and pagination',
+	})
+	@ApiResponse({ type: UserTypePagedDto, status: 200, description: 'User types with privileges retrieved successfully' })
 	@ApiResponse({ status: 401, description: 'Unauthorized' })
 	@ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
-	findAllWithPrivileges() {
-		return this.userTypeService.findAllWithPrivileges();
+	findAllWithPrivileges(@Query('search') search?: string, @Query('page') page: number = 1, @Query('limit') limit: number = 10) {
+		return this.userTypeService.findAllWithPrivileges({ search, page, limit });
 	}
 
 	@Get(':id')
@@ -88,7 +91,8 @@ export class UserTypeController extends BaseController<UserType, CreateUserTypeD
 	@ApiResponse({ status: 401, description: 'Unauthorized' })
 	@ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
 	@ApiResponse({ status: 404, description: 'Not Found - One or more user types do not exist' })
+	@ApiResponse({ status: 400, description: 'Bad Request - Cannot delete non-deletable user types' })
 	delete(@Param('ids') ids: UUID) {
-		return super.delete(ids);
+		return this.userTypeService.safeDelete(ids);
 	}
 }

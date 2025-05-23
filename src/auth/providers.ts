@@ -13,7 +13,7 @@ export class AuthenticationGuard implements CanActivate {
 		private jwtService: JwtService,
 		private reflector: Reflector,
 		private configService: ConfigService,
-		@InjectRepository(User) private userRepository: Repository<User>
+		@InjectRepository(User) private userRepository: Repository<User>,
 	) {}
 
 	async canActivate(context: ExecutionContext): Promise<boolean> {

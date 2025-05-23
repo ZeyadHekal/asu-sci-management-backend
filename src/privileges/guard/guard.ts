@@ -13,7 +13,7 @@ export class PrivilegesGuard implements CanActivate {
 		private reflector: Reflector,
 		private privilegesService: PrivilegeService,
 		@InjectRepository(User) private userRepostiroy: Repository<User>,
-	) { }
+	) {}
 
 	async canActivate(context: ExecutionContext): Promise<boolean> {
 		return true;

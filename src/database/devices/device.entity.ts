@@ -5,8 +5,8 @@ import { UUID } from 'crypto';
 import { Lab } from '../labs/lab.entity';
 import { User } from '../users/user.entity';
 import { DeviceReport } from './devices_reports.entity';
-import { report } from 'process';
 import { DeviceSoftware } from './devices_softwares.entity';
+import { DeviceSpecification } from './device-specification.entity';
 
 @Entity('devices')
 export class Device extends ManagementEntity {
@@ -37,7 +37,9 @@ export class Device extends ManagementEntity {
 	@OneToMany(() => DeviceReport, (report) => report.device, { lazy: true, onDelete: 'RESTRICT', onUpdate: 'CASCADE' })
 	deviceReports: Promise<DeviceReport[]>;
 
+	@OneToMany(() => DeviceSpecification, (spec) => spec.device, { lazy: true })
+	specifications: Promise<DeviceSpecification[]>;
+
 	deviceSoftwares: Promise<DeviceSoftware[]>;
 	__deviceSoftwares__?: DeviceSoftware[];
 }
-

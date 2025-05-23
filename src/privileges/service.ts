@@ -5,12 +5,13 @@ import { BadRequestException, Injectable, NotFoundException, ForbiddenException 
 import { User } from 'src/database/users/user.entity';
 import { UUID } from 'crypto';
 import { Privilege, UserPrivilege, UserTypePrivilege } from 'src/database/privileges/privilege.entity';
-import { PrivilegeCode } from './definition';
+import { PrivilegeCode } from '../db-seeder/data/privileges';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserType } from 'src/database/users/user-type.entity';
 import { DeleteDto } from 'src/base/delete.dto';
 import { transformToInstance } from 'src/base/transformToInstance';
 import { UserDto } from 'src/users/dtos';
+import { WebsocketService } from 'src/websockets/websocket.service';
 
 @Injectable()
 export class PrivilegeService {
@@ -21,7 +22,8 @@ export class PrivilegeService {
 		@InjectRepository(UserType) private readonly userTypeRepo: Repository<UserType>,
 		@InjectRepository(User) private readonly userRepo: Repository<User>,
 		@InjectRepository(Privilege) private readonly privilegesRepo: Repository<Privilege>,
-	) { }
+		private readonly websocketService: WebsocketService,
+	) {}
 
 	async getAllPrivileges(): Promise<Privilege[]> {
 		return this.privilegesRepo.find();
@@ -39,6 +41,9 @@ export class PrivilegeService {
 		assignment.privilege_id = privilege.id;
 		assignment.resourceIds = resourceIds || null;
 		await this.userPrivAssignmentsRepo.save(assignment);
+
+		// Notify the user via WebSocket
+		this.websocketService.notifyPrivilegeChange(userId, privilegeCode, true, resourceIds);
 	}
 
 	async assignPrivilegeToUserType(userTypeId: UUID, privilegeCode: PrivilegeCode, resourceIds?: UUID[]): Promise<void> {
@@ -53,6 +58,9 @@ export class PrivilegeService {
 		assignment.privilege_id = privilege.id;
 		assignment.resourceIds = resourceIds || null;
 		await this.userTypePrivAssignmentsRepo.save(assignment);
+
+		// Notify all users of this type via WebSocket
+		this.websocketService.notifyUserTypePrivilegeChange(userTypeId, privilegeCode, true, resourceIds);
 	}
 
 	async unassignPrivilegeFromUser(userId: UUID, privilegeCode: PrivilegeCode): Promise<DeleteDto> {
@@ -64,10 +72,16 @@ export class PrivilegeService {
 		if (!userAssignment) {
 			throw new BadRequestException('User privilege assignment not found');
 		}
-		return transformToInstance(DeleteDto, await this.userPrivAssignmentsRepo.delete({ user_id: userId, privilege_id: privilege.id }));
+
+		const result = transformToInstance(DeleteDto, await this.userPrivAssignmentsRepo.delete({ user_id: userId, privilege_id: privilege.id }));
+
+		// Notify the user about privilege removal via WebSocket
+		this.websocketService.notifyPrivilegeChange(userId, privilegeCode, false);
+
+		return result;
 	}
 
-	async unassignPrivilegeToUserType(userTypeId: UUID, privilegeCode: PrivilegeCode): Promise<DeleteDto> {
+	async unassignPrivilegeFromUserType(userTypeId: UUID, privilegeCode: PrivilegeCode): Promise<DeleteDto> {
 		const privilege = await this.privilegesRepo.findOne({ where: { code: privilegeCode } });
 		if (!privilege) {
 			throw new BadRequestException('User type or privilege not found');
@@ -85,7 +99,13 @@ export class PrivilegeService {
 		if (!userTypeAssignment) {
 			throw new BadRequestException('User type or privilege not found');
 		}
-		return transformToInstance(DeleteDto, this.userTypePrivAssignmentsRepo.delete({ user_type_id: userTypeId, privilege_id: privilege.id }));
+
+		const result = transformToInstance(DeleteDto, await this.userTypePrivAssignmentsRepo.delete({ user_type_id: userTypeId, privilege_id: privilege.id }));
+
+		// Notify all users of this type about privilege removal
+		this.websocketService.notifyUserTypePrivilegeChange(userTypeId, privilegeCode, false);
+
+		return result;
 	}
 
 	async getUsersByPrivilege(privilegeCode: PrivilegeCode): Promise<UserDto[]> {
@@ -98,35 +118,31 @@ export class PrivilegeService {
 		// Find users who have this privilege directly assigned
 		const userPrivileges = await this.userPrivAssignmentsRepo.find({
 			where: { privilege_id: privilege.id },
-			relations: ['user']
+			relations: ['user'],
 		});
-		const usersWithDirectPrivilege = await Promise.all(
-			userPrivileges.map(async (up) => await up.user)
-		);
+		const usersWithDirectPrivilege = await Promise.all(userPrivileges.map(async (up) => await up.user));
 
 		// Find user types that have this privilege
 		const userTypePrivileges = await this.userTypePrivAssignmentsRepo.find({
-			where: { privilege_id: privilege.id }
+			where: { privilege_id: privilege.id },
 		});
-		const userTypeIds = userTypePrivileges.map(utp => utp.user_type_id);
+		const userTypeIds = userTypePrivileges.map((utp) => utp.user_type_id);
 
 		// Find users with those user types
 		const usersWithTypePrivilege = await this.userRepo.find({
-			where: { userTypeId: In(userTypeIds) }
+			where: { userTypeId: In(userTypeIds) },
 		});
 
 		// Combine and deduplicate users
 		const allUsers = [...usersWithDirectPrivilege, ...usersWithTypePrivilege];
 		const uniqueUserMap = new Map<string, User>();
 
-		allUsers.forEach(user => {
+		allUsers.forEach((user) => {
 			uniqueUserMap.set(user.id.toString(), user);
 		});
 
 		// Convert User entities to UserDto objects
-		return Array.from(uniqueUserMap.values()).map(user =>
-			transformToInstance(UserDto, user)
-		);
+		return Array.from(uniqueUserMap.values()).map((user) => transformToInstance(UserDto, user));
 	}
 
 	private async validateResourceIds(entityName: string | null, resourceIds?: number[]) {

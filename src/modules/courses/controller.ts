@@ -1,15 +1,29 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import {
-	Entity, CreateDto, UpdateDto, GetDto, GetListDto, DeleteDto,
-	PaginationInput, IPaginationOutput, PagedDto,
-	BaseController, Service, constants, UUID,
-	ApiResponse, ApiOperation, ApiTags, ApiParam,
-	RequirePrivileges, PrivilegeCode,
+	Entity,
+	CreateDto,
+	UpdateDto,
+	GetDto,
+	GetListDto,
+	DeleteDto,
+	PaginationInput,
+	IPaginationOutput,
+	PagedDto,
+	BaseController,
+	Service,
+	constants,
+	UUID,
+	ApiResponse,
+	ApiOperation,
+	ApiTags,
+	ApiParam,
+	RequirePrivileges,
+	PrivilegeCode,
 } from './imports';
 
 @ApiTags('courses')
-@RequirePrivileges({ and: [PrivilegeCode.MANAGE_USERS] })
-	@Controller(constants.plural_name)
+@RequirePrivileges({ and: [PrivilegeCode.MANAGE_COURSES] })
+@Controller(constants.plural_name)
 export class CourseController extends BaseController<Entity, CreateDto, UpdateDto, GetDto, GetListDto> {
 	constructor(public readonly service: Service) {
 		super(service, Entity, CreateDto, UpdateDto, GetDto, GetListDto);
@@ -32,6 +46,15 @@ export class CourseController extends BaseController<Entity, CreateDto, UpdateDt
 	@ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
 	getAll(): Promise<GetListDto[]> {
 		return super.getAll();
+	}
+
+	@Get('statistics')
+	@ApiOperation({ summary: 'Get course statistics', description: 'Retrieve course statistics and counts' })
+	@ApiResponse({ status: 200, description: 'Course statistics retrieved successfully' })
+	@ApiResponse({ status: 401, description: 'Unauthorized' })
+	@ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
+	async getStatistics() {
+		return this.service.getCourseStatistics();
 	}
 
 	@Get('paginated')

@@ -24,12 +24,12 @@ export class CreateCourseDto {
 	@Transform(({ value }) => (value as string).toUpperCase())
 	subjectCode: string;
 
-    @ApiProperty()
+	@ApiProperty()
 	@Expose()
 	@IsNumber()
 	@Length(3)
 	courseNumber: number;
-	
+
 	@ApiProperty()
 	@Expose()
 	@IsBoolean()
@@ -40,7 +40,7 @@ export class CreateCourseDto {
 	@IsString()
 	labDuration: string;
 
-    @ApiProperty()
+	@ApiProperty()
 	@Expose()
 	@IsNumber()
 	attendanceMarks: number;
@@ -48,22 +48,62 @@ export class CreateCourseDto {
 
 export class UpdateCourseDto extends PartialType(CreateCourseDto) {}
 
-export class CourseDto extends OmitType(CreateCourseDto,[]) {
+export class CourseDto extends OmitType(CreateCourseDto, []) {
 	@ApiProperty()
 	@Expose()
 	id: UUID;
+
+	@ApiProperty()
+	@Expose()
+	created_at: Date;
+
+	@ApiProperty()
+	@Expose()
+	updated_at: Date;
 }
 
-export class CourseListDto extends OmitType(CourseDto, []) {}
-
-export class CoursePagedDto implements IPaginationOutput<CourseDto> {
-	@ApiProperty({ type: () => CourseDto })
+export class CourseListDto extends OmitType(CourseDto, ['created_at', 'updated_at']) {
+	@ApiProperty({ description: 'Course code (subjectCode + courseNumber)' })
 	@Expose()
-	items: CourseDto[];
+	courseCode: string;
+
+	@ApiProperty({ description: 'Course type based on hasLab field' })
+	@Expose()
+	courseType: 'Practical' | 'Theory';
+
+	@ApiProperty({ description: 'List of assigned doctor names', type: [String] })
+	@Expose()
+	assignedDoctors: string[];
+
+	@ApiProperty({ description: 'Total number of enrolled students' })
+	@Expose()
+	numberOfStudents: number;
+
+	@ApiProperty({ description: 'Indicates if course has default group created' })
+	@Expose()
+	hasDefaultGroup: boolean;
+}
+
+export class CoursePagedDto implements IPaginationOutput<CourseListDto> {
+	@ApiProperty({ type: [CourseListDto] })
+	@Expose()
+	items: CourseListDto[];
 
 	@ApiProperty()
 	@Expose()
 	total: number;
 }
 
-export class CoursePaginationInput extends IntersectionType(PaginationInput, Course) { }
+export class CoursePaginationInput extends PaginationInput {
+	@ApiProperty({ required: false, description: 'Filter by course type' })
+	@Expose()
+	courseType?: 'Practical' | 'Theory';
+
+	@ApiProperty({ required: false, description: 'Filter by subject code' })
+	@Expose()
+	subjectCode?: string;
+
+	@ApiProperty({ required: false, description: 'Search by course name or code' })
+	@Expose()
+	search?: string;
+}

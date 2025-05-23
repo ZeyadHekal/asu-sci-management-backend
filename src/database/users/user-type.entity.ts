@@ -9,6 +9,14 @@ export class UserType extends ManagementEntity {
 	@Expose()
 	name: string;
 
+	@Column({ nullable: true })
+	@Expose()
+	description: string;
+
+	@Column({ default: true })
+	@Expose()
+	isDeletable: boolean;
+
 	@OneToMany(() => UserTypePrivilege, (userTypePrivilege) => userTypePrivilege.userType, {
 		lazy: true,
 	})

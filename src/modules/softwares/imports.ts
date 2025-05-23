@@ -13,12 +13,12 @@ import { Software } from 'src/database/softwares/software.entity';
 */
 
 export {
-    CreateSoftwareDto as CreateDto,
-    UpdateSoftwareDto as UpdateDto,
-    SoftwareDto as GetDto,
-    SoftwareListDto as GetListDto,
-    SoftwarePagedDto as PagedDto,
-    SoftwarePaginationInput as PaginationInput,
+	CreateSoftwareDto as CreateDto,
+	UpdateSoftwareDto as UpdateDto,
+	SoftwareDto as GetDto,
+	SoftwareListDto as GetListDto,
+	SoftwarePagedDto as PagedDto,
+	SoftwarePaginationInput as PaginationInput,
 } from './dtos';
 
 // Remove the following two lines and replace with import Software from the database
@@ -28,10 +28,10 @@ export { Software as Entity };
 export { SoftwareService as Service } from './service';
 
 export const constants = {
-    singular_name: 'software',
-    plural_name: 'softwares',
-    entity_id: 'software_id',
-    entity_ids: 'software_ids',
+	singular_name: 'software',
+	plural_name: 'softwares',
+	entity_id: 'software_id',
+	entity_ids: 'software_ids',
 };
 
 /**********************/
@@ -42,7 +42,7 @@ export const constants = {
 export { IPaginationOutput } from 'src/base/interfaces/interface.pagination.output';
 export { DeleteDto } from 'src/base/delete.dto';
 export { UUID } from 'crypto';
-export { PrivilegeCode } from 'src/privileges/definition';
+export { PrivilegeCode } from 'src/db-seeder/data/privileges';
 export { RequirePrivileges } from 'src/privileges/guard/decorator';
 export { BaseController } from 'src/base/base.controller';
 export { ApiResponse, ApiOperation, ApiTags, ApiParam } from '@nestjs/swagger';

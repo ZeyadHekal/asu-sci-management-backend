@@ -1,4 +1,4 @@
-import { Entity, Column, ManyToOne, JoinColumn, ManyToMany, JoinTable, PrimaryColumn } from 'typeorm';
+import { Entity, Column, ManyToOne, JoinColumn, ManyToMany, JoinTable, PrimaryColumn, OneToMany } from 'typeorm';
 import { Expose } from 'class-transformer';
 import { UUID } from 'crypto';
 import { ManagementEntity } from 'src/base/base.entity';
@@ -8,6 +8,14 @@ import { User } from '../users/user.entity';
 import { OmitType } from '@nestjs/swagger';
 import { Device } from '../devices/device.entity';
 import { Software } from '../softwares/software.entity';
+
+export enum ExamStatus {
+	SCHEDULED = 'scheduled',
+	EXAM_MODE_ACTIVE = 'exam_mode_active',
+	STARTED = 'started',
+	ENDED = 'ended',
+	CANCELLED = 'cancelled',
+}
 
 @Entity('event_schedules')
 export class EventSchedule extends ManagementEntity {
@@ -23,15 +31,47 @@ export class EventSchedule extends ManagementEntity {
 	@Expose()
 	dateTime: Date;
 
-	@Column()
+	@Column({ nullable: true })
 	@Expose()
-	examFiles: string;
+	examFiles?: string;
 
-	@Column({ name: 'assisstant_id' })
+	@Column({ name: 'assistant_id' })
 	@Expose()
-	assisstantId: UUID;
+	assistantId: UUID;
 
-	@ManyToOne(() => Event, { nullable: false, lazy: true, onDelete: 'RESTRICT', onUpdate: 'CASCADE' })
+	@Column({
+		type: 'enum',
+		enum: ExamStatus,
+		default: ExamStatus.SCHEDULED,
+	})
+	@Expose()
+	status: ExamStatus;
+
+	@Column({ nullable: true })
+	@Expose()
+	actualStartTime?: Date;
+
+	@Column({ nullable: true })
+	@Expose()
+	actualEndTime?: Date;
+
+	@Column({ nullable: true })
+	@Expose()
+	examModeStartTime?: Date;
+
+	@Column({ default: 0 })
+	@Expose()
+	maxStudents: number;
+
+	@Column({ default: 0 })
+	@Expose()
+	enrolledStudents: number;
+
+	@Column({ nullable: true, name: 'exam_group_id' })
+	@Expose()
+	examGroupId?: UUID;
+
+	@ManyToOne(() => Event, (event) => event.schedules, { nullable: false, lazy: true, onDelete: 'RESTRICT', onUpdate: 'CASCADE' })
 	@JoinColumn({ name: 'event_id' })
 	event: Promise<Event>;
 
@@ -39,16 +79,20 @@ export class EventSchedule extends ManagementEntity {
 	@JoinColumn({ name: 'lab_id' })
 	lab: Promise<Lab>;
 
-	@ManyToMany(() => User, (user) => user.event_schedules, {
-		lazy: true,
-	})
-	@JoinTable({ name: 'event_schedules_assisstance' })
-	assisstant: Promise<User[]>;
+	@ManyToOne(() => User, { nullable: false, lazy: true, onDelete: 'RESTRICT', onUpdate: 'CASCADE' })
+	@JoinColumn({ name: 'assistant_id' })
+	assistant: Promise<User>;
+
+	@ManyToOne('ExamGroup', { nullable: true, lazy: true, onDelete: 'SET NULL', onUpdate: 'CASCADE' })
+	@JoinColumn({ name: 'exam_group_id' })
+	examGroup?: Promise<any>;
+
+	@OneToMany(() => StudentEventSchedule, (studentSchedule) => studentSchedule.eventSchedule, { lazy: true })
+	studentSchedules: Promise<StudentEventSchedule[]>;
 }
 
 @Entity('student_event_schedules')
 export class StudentEventSchedule extends OmitType(ManagementEntity, ['id']) {
-
 	@PrimaryColumn({ type: 'string' })
 	eventSchedule_id: UUID;
 
@@ -56,21 +100,42 @@ export class StudentEventSchedule extends OmitType(ManagementEntity, ['id']) {
 	student_id: UUID;
 
 	@Column({ nullable: true })
-	hasAttended: Boolean;
+	@Expose()
+	hasAttended?: boolean;
 
 	@Column({ nullable: true })
-	examModel: String;
+	@Expose()
+	examModel?: string;
 
 	@Column({ nullable: true })
-	seatNo: String;
+	@Expose()
+	seatNo?: string;
 
-	@ManyToOne(() => EventSchedule, { lazy: true })
+	@Column({ nullable: true })
+	@Expose()
+	mark?: number;
+
+	@Column({ nullable: true })
+	@Expose()
+	submittedAt?: Date;
+
+	@Column({ default: false })
+	@Expose()
+	isInExamMode: boolean;
+
+	@Column({ nullable: true })
+	@Expose()
+	examModeEnteredAt?: Date;
+
+	@Column({ nullable: true })
+	@Expose()
+	examStartedAt?: Date;
+
+	@ManyToOne(() => EventSchedule, (schedule) => schedule.studentSchedules, { lazy: true })
 	@JoinColumn({ name: 'eventSchedule_id' })
 	eventSchedule: Promise<EventSchedule>;
-	__eventSchedule__?: EventSchedule;
 
-	@ManyToOne(() => User, (ut) => ut.userPrivileges, { lazy: true })
+	@ManyToOne(() => User, { lazy: true })
 	@JoinColumn({ name: 'student_id' })
-	student: Promise<Device>;
-	__student__?: Device;
+	student: Promise<User>;
 }

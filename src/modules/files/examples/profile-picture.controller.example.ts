@@ -1,14 +1,6 @@
-import {
-    Body,
-    Controller,
-    Get,
-    Param,
-    ParseIntPipe,
-    Post,
-    UploadedFile
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Post, UploadedFile } from '@nestjs/common';
 import { FileService } from '../file.service';
-import { FileUpload } from '../decorators/file-upload.decorator';
+import { FileUpload, FileUploadOptions } from '../decorators/file-upload.decorator';
 import { SignedUrl } from '../decorators/signed-url.decorator';
 import { FileResponseDto, FileUploadDto } from '../dto/file.dto';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -21,37 +13,32 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 @ApiTags('users')
 @Controller('users')
 export class UserProfileExampleController {
-    constructor(private readonly fileService: FileService) { }
+	constructor(private readonly fileService: FileService) {}
 
-    @Post(':id/profile-picture')
-    @ApiOperation({ summary: 'Upload user profile picture' })
-    @FileUpload('profilePicture')
-    async uploadProfilePicture(
-        @Param('id', ParseIntPipe) userId: number,
-        @UploadedFile() file: Express.Multer.File,
-    ): Promise<FileResponseDto> {
-        // Create file upload options
-        const fileUploadDto: FileUploadDto = {
-            prefix: `users/${userId}/profile`,
-            category: 'profile_picture',
-            description: `Profile picture for user ${userId}`,
-            isPublic: false, // Keep it private for security
-        };
+	@Post(':id/profile-picture')
+	@ApiOperation({ summary: 'Upload user profile picture' })
+	@FileUpload('profilePicture')
+	async uploadProfilePicture(@Param('id', ParseIntPipe) userId: number, @UploadedFile() file: Express.Multer.File): Promise<FileResponseDto> {
+		// Create file upload options
+		const fileUploadDto: FileUploadOptions = {
+			prefix: `users/${userId}/profile`,
+			isPublic: false, // Keep it private for security
+		};
 
-        return this.fileService.uploadFile(file, fileUploadDto);
-    }
+		return this.fileService.uploadFile(file, fileUploadDto);
+	}
 
-    @Get(':id/profile-picture')
-    @ApiOperation({ summary: 'Get user profile picture URL' })
-    async getUserProfilePictureUrl(
-        @Param('id', ParseIntPipe) userId: number,
-        @SignedUrl() { expirySeconds }: { expirySeconds?: number },
-    ): Promise<{ pictureUrl: string }> {
-        // In a real application, you would get the file ID from the user record
-        // This is just for example purposes
-        const fileId = 1; // Example file ID
+	@Get(':id/profile-picture')
+	@ApiOperation({ summary: 'Get user profile picture URL' })
+	async getUserProfilePictureUrl(
+		@Param('id', ParseIntPipe) userId: number,
+		@SignedUrl() { expirySeconds }: { expirySeconds?: number },
+	): Promise<{ pictureUrl: string }> {
+		// In a real application, you would get the file ID from the user record
+		// This is just for example purposes
+		const fileId = 1; // Example file ID
 
-        const url = await this.fileService.getSignedUrl(fileId, expirySeconds);
-        return { pictureUrl: url };
-    }
-} 
+		const url = await this.fileService.getSignedUrl(fileId, expirySeconds);
+		return { pictureUrl: url };
+	}
+}

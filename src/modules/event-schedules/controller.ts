@@ -1,15 +1,29 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import {
-	Entity, CreateDto, UpdateDto, GetDto, GetListDto, DeleteDto,
-	PaginationInput, IPaginationOutput, PagedDto,
-	BaseController, Service, constants, UUID,
-	ApiResponse, ApiOperation, ApiTags, ApiParam,
-	RequirePrivileges, PrivilegeCode,
+	Entity,
+	CreateDto,
+	UpdateDto,
+	GetDto,
+	GetListDto,
+	DeleteDto,
+	PaginationInput,
+	IPaginationOutput,
+	PagedDto,
+	BaseController,
+	Service,
+	constants,
+	UUID,
+	ApiResponse,
+	ApiOperation,
+	ApiTags,
+	ApiParam,
+	RequirePrivileges,
+	PrivilegeCode,
 } from './imports';
 
 @ApiTags('event-schedules')
 @RequirePrivileges({ and: [PrivilegeCode.MANAGE_USERS] })
-	@Controller(constants.plural_name)
+@Controller(constants.plural_name)
 export class EventScheduleController extends BaseController<Entity, CreateDto, UpdateDto, GetDto, GetListDto> {
 	constructor(public readonly service: Service) {
 		super(service, Entity, CreateDto, UpdateDto, GetDto, GetListDto);

@@ -6,6 +6,7 @@ import { User } from './users/user.entity';
 import { UserType } from './users/user-type.entity';
 import { Student } from './students/student.entity';
 import { Course } from './courses/course.entity';
+import { CourseGroup } from './courses/course-group.entity';
 import { Material } from './materials/material.entity';
 import { Lab } from './labs/lab.entity';
 import { Software } from './softwares/software.entity';
@@ -17,7 +18,7 @@ import { StudentEventAttendance } from './students/student_event_attendance.enti
 import { StudentsFiles } from './students/student_files.entity';
 import { LabSessionAttentance } from './lab_sessions/lab_session_attendance.entity';
 import { LabSession } from './lab_sessions/lab_session.entity';
-import { CoursesLabs } from './courses/course_labs.entity';
+import { CourseGroupSchedule } from './courses/course_labs.entity';
 import { DeviceReport } from './devices/devices_reports.entity';
 import { Device } from './devices/device.entity';
 import { DeviceSoftware } from './devices/devices_softwares.entity';
@@ -47,6 +48,7 @@ import { DeviceSoftware } from './devices/devices_softwares.entity';
 			UserTypePrivilege,
 			Student,
 			Course,
+			CourseGroup,
 			Material,
 			Lab,
 			Software,
@@ -58,7 +60,7 @@ import { DeviceSoftware } from './devices/devices_softwares.entity';
 			StudentsFiles,
 			LabSession,
 			LabSessionAttentance,
-			CoursesLabs,
+			CourseGroupSchedule,
 			DeviceReport,
 			Device,
 			DeviceSoftware,

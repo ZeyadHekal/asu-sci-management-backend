@@ -9,7 +9,7 @@ export class CreateTemplateDto {
 	attributes: string;
 }
 
-export class UpdateTemplateDto extends PartialType(CreateTemplateDto) { }
+export class UpdateTemplateDto extends PartialType(CreateTemplateDto) {}
 
 export class TemplateDto extends OmitType(CreateTemplateDto, []) {
 	@ApiProperty()
@@ -17,7 +17,7 @@ export class TemplateDto extends OmitType(CreateTemplateDto, []) {
 	id: UUID;
 }
 
-export class TemplateListDto extends OmitType(TemplateDto, []) { }
+export class TemplateListDto extends OmitType(TemplateDto, []) {}
 
 export class TemplatePagedDto implements IPaginationOutput<TemplateDto> {
 	@ApiProperty({ type: () => TemplateDto })
@@ -29,4 +29,4 @@ export class TemplatePagedDto implements IPaginationOutput<TemplateDto> {
 	total: number;
 }
 
-export class TemplatePaginationInput extends IntersectionType(PaginationInput, Entity) { }
+export class TemplatePaginationInput extends IntersectionType(PaginationInput, Entity) {}

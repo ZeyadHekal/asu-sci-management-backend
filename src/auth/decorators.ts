@@ -12,12 +12,10 @@ export function Public(): MethodDecorator & ClassDecorator {
 	);
 }
 
-export const CurrentUser = createParamDecorator(
-	(data: unknown, ctx: ExecutionContext) => {
-		const request = ctx.switchToHttp().getRequest();
-		if (!request.user || !isInstance(request.user, User)) {
-			throw new UnauthorizedException();
-		}
-		return request.user;
-	},
-);
+export const CurrentUser = createParamDecorator((data: unknown, ctx: ExecutionContext) => {
+	const request = ctx.switchToHttp().getRequest();
+	if (!request.user || !isInstance(request.user, User)) {
+		throw new UnauthorizedException();
+	}
+	return request.user;
+});

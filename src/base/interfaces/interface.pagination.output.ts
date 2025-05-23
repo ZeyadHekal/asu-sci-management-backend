@@ -1,4 +1,4 @@
 export interface IPaginationOutput<T> {
-    items: T[];
-    total: number;
+	items: T[];
+	total: number;
 }

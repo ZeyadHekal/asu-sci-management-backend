@@ -6,14 +6,12 @@ import { FileController } from './file.controller';
 import { FileService } from './file.service';
 import { MinioService } from './minio.service';
 import { FileRepository } from './repositories/file.repository';
+import { FileUploadInterceptor } from './interceptors/file-upload.interceptor';
 
 @Module({
-    imports: [
-        ConfigModule,
-        TypeOrmModule.forFeature([File]),
-    ],
-    controllers: [FileController],
-    providers: [FileService, MinioService, FileRepository],
-    exports: [FileService, MinioService],
+	imports: [ConfigModule, TypeOrmModule.forFeature([File])],
+	controllers: [FileController],
+	providers: [FileService, MinioService, FileRepository, FileUploadInterceptor],
+	exports: [FileService, MinioService],
 })
-export class FileModule { } 
+export class FileModule {}

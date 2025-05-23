@@ -1,7 +1,7 @@
 import { Controller, Post, Body, Get, Delete, Param, UseGuards } from '@nestjs/common';
 import { PrivilegeService } from './service';
 import { UUID } from 'crypto';
-import { PRIVILEGE_SEED_DATA, PrivilegeCode } from './definition';
+import { PRIVILEGE_SEED_DATA, PrivilegeCode } from '../db-seeder/data/privileges';
 import { RequirePrivileges } from './guard/decorator';
 import { UserAssignPrivilegeDto, PrivilegeDto, UserTypeAssignPrivilegeDto } from './dtos';
 import { ApiResponse, ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
@@ -11,7 +11,7 @@ import { UserDto } from 'src/users/dtos';
 @ApiTags('privileges')
 @Controller('privileges')
 export class PrivilegeController {
-	constructor(private readonly privilegesService: PrivilegeService) { }
+	constructor(private readonly privilegesService: PrivilegeService) {}
 
 	@Get()
 	@ApiOperation({ summary: 'Get all privileges' })
@@ -53,9 +53,8 @@ export class PrivilegeController {
 	@ApiBearerAuth()
 	@RequirePrivileges({ and: [PrivilegeCode.MANAGE_SYSTEM] })
 	@ApiResponse({ type: DeleteDto })
-	async unassignPrivilegeToUserType(@Body() body: UserTypeAssignPrivilegeDto) {
-		await this.privilegesService.unassignPrivilegeToUserType(body.userTypeId, body.privilegeCode);
-		return { success: true };
+	async unassignPrivilegeFromUserType(@Body() body: UserTypeAssignPrivilegeDto) {
+		return this.privilegesService.unassignPrivilegeFromUserType(body.userTypeId, body.privilegeCode);
 	}
 
 	@Delete('user/:userId/:privilegeCode')
@@ -64,10 +63,7 @@ export class PrivilegeController {
 	@ApiOperation({ summary: 'Unassign privilege from user', description: 'Remove a specific privilege from a user' })
 	@ApiBearerAuth()
 	@RequirePrivileges({ and: [PrivilegeCode.MANAGE_SYSTEM] })
-	async unassignPrivilegeFromUserById(
-		@Param('userId') userId: UUID,
-		@Param('privilegeCode') privilegeCode: PrivilegeCode
-	): Promise<DeleteDto> {
+	async unassignPrivilegeFromUserById(@Param('userId') userId: UUID, @Param('privilegeCode') privilegeCode: PrivilegeCode): Promise<DeleteDto> {
 		return this.privilegesService.unassignPrivilegeFromUser(userId, privilegeCode);
 	}
 
@@ -77,11 +73,8 @@ export class PrivilegeController {
 	@ApiOperation({ summary: 'Unassign privilege from user type', description: 'Remove a specific privilege from a user type' })
 	@ApiBearerAuth()
 	@RequirePrivileges({ and: [PrivilegeCode.MANAGE_SYSTEM] })
-	async unassignPrivilegeFromUserType(
-		@Param('userTypeId') userTypeId: UUID,
-		@Param('privilegeCode') privilegeCode: PrivilegeCode
-	): Promise<DeleteDto> {
-		return this.privilegesService.unassignPrivilegeToUserType(userTypeId, privilegeCode);
+	async unassignPrivilegeFromUserTypeById(@Param('userTypeId') userTypeId: UUID, @Param('privilegeCode') privilegeCode: PrivilegeCode): Promise<DeleteDto> {
+		return this.privilegesService.unassignPrivilegeFromUserType(userTypeId, privilegeCode);
 	}
 
 	@Get('users/:privilegeCode')

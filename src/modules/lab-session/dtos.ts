@@ -23,7 +23,7 @@ export class CreateLabSessionDto {
 	date: Date;
 }
 
-export class UpdateLabSessionDto extends PartialType(CreateLabSessionDto) { }
+export class UpdateLabSessionDto extends PartialType(CreateLabSessionDto) {}
 
 export class LabSessionDto extends OmitType(CreateLabSessionDto, []) {
 	@ApiProperty()
@@ -31,7 +31,7 @@ export class LabSessionDto extends OmitType(CreateLabSessionDto, []) {
 	id: UUID;
 }
 
-export class LabSessionListDto extends OmitType(LabSessionDto, []) { }
+export class LabSessionListDto extends OmitType(LabSessionDto, []) {}
 
 export class LabSessionPagedDto implements IPaginationOutput<LabSessionDto> {
 	@ApiProperty({ type: () => LabSessionDto })
@@ -43,4 +43,4 @@ export class LabSessionPagedDto implements IPaginationOutput<LabSessionDto> {
 	total: number;
 }
 
-export class LabSessionPaginationInput extends IntersectionType(PaginationInput, Entity) { }
+export class LabSessionPaginationInput extends IntersectionType(PaginationInput, Entity) {}

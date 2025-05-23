@@ -1,20 +1,21 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateUserTypeDto, UpdateUserTypeDto, UserTypeDto, UserTypeWithPrivilegeDto } from './dtos';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { UserType } from 'src/database/users/user-type.entity';
 import { BaseService } from 'src/base/base.service';
 import { UUID } from 'crypto';
 import { transformToInstance } from 'src/base/transformToInstance';
 import { PrivilegeAssignmentDto } from 'src/privileges/dtos';
 import { Privilege, UserTypePrivilege } from 'src/database/privileges/privilege.entity';
+import { DeleteDto } from 'src/base/delete.dto';
 
 @Injectable()
 export class UserTypeService extends BaseService<UserType, CreateUserTypeDto, UpdateUserTypeDto, UserTypeDto, UserTypeDto> {
-
-	constructor(@InjectRepository(UserType) private readonly userTypeRepository: Repository<UserType>,
+	constructor(
+		@InjectRepository(UserType) private readonly userTypeRepository: Repository<UserType>,
 		@InjectRepository(Privilege) private readonly privilegeRepository: Repository<Privilege>,
-		@InjectRepository(UserTypePrivilege) private readonly userTypePrivAssignmentsRepo: Repository<UserTypePrivilege>
+		@InjectRepository(UserTypePrivilege) private readonly userTypePrivAssignmentsRepo: Repository<UserTypePrivilege>,
 	) {
 		super(UserType, CreateUserTypeDto, UpdateUserTypeDto, UserTypeDto, UserTypeDto, userTypeRepository);
 	}
@@ -51,17 +52,53 @@ export class UserTypeService extends BaseService<UserType, CreateUserTypeDto, Up
 		if (!userType) {
 			throw new NotFoundException();
 		}
-		return userType.__userTypePrivileges__.map(obj => transformToInstance(PrivilegeAssignmentDto, { ...obj.__privilege__, resourceIds: obj.resourceIds }));
+		return userType.__userTypePrivileges__.map((obj) =>
+			transformToInstance(PrivilegeAssignmentDto, { ...obj.__privilege__, resourceIds: obj.resourceIds }),
+		);
 	}
 
-	async findAllWithPrivileges() {
-		const userTypes = await this.userTypeRepository.find({ relations: ['assignments', 'assignments.privilege'] });
+	async findAllWithPrivileges({ search, page = 0, limit = 10 }: { search?: string; page?: number; limit?: number }) {
+		const query = this.userTypeRepository
+			.createQueryBuilder('userType')
+			.leftJoinAndSelect('userType.userTypePrivileges', 'assignments')
+			.leftJoinAndSelect('assignments.privilege', 'privilege');
+
+		if (search) {
+			query.andWhere('userType.name LIKE :search OR userType.description LIKE :search', { search: `%${search}%` });
+		}
+
+		query.skip(page * limit).take(limit);
+
+		const [userTypes, total] = await query.getManyAndCount();
 		const results = [] as UserTypeWithPrivilegeDto[];
 		for (const userType of userTypes) {
 			const result = transformToInstance(UserTypeWithPrivilegeDto, userType);
-			result.privileges = userType.__userTypePrivileges__.map(obj => transformToInstance(PrivilegeAssignmentDto, { ...obj.__privilege__, resourceIds: obj.resourceIds }));
+			result.privileges =
+				userType.__userTypePrivileges__?.map((obj) =>
+					transformToInstance(PrivilegeAssignmentDto, { ...obj.__privilege__, resourceIds: obj.resourceIds }),
+				) || [];
 			results.push(result);
 		}
-		return results;
+		return {
+			items: results,
+			total,
+		};
+	}
+
+	async safeDelete(ids: UUID | UUID[]): Promise<DeleteDto> {
+		// Split the IDs if passed as comma-separated string
+		const idArray: UUID[] = typeof ids === 'string' ? (ids.split(',') as UUID[]) : Array.isArray(ids) ? ids : [ids];
+
+		// Check for non-deletable user types
+		const userTypesToDelete = await this.userTypeRepository.find({
+			where: { id: In(idArray) },
+		});
+
+		const nonDeletableTypes = userTypesToDelete.filter((ut) => ut.isDeletable === false);
+		if (nonDeletableTypes.length > 0) {
+			throw new BadRequestException(`The following user types cannot be deleted: ${nonDeletableTypes.map((t) => t.name).join(', ')}`);
+		}
+
+		return super.delete(idArray);
 	}
 }

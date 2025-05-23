@@ -20,7 +20,7 @@ export class AuthService {
 			throw new BadRequestException('Incorrect username or password');
 		}
 
-		// Get user type 
+		// Get user type
 		const userType = await user.userType;
 
 		// Get privileges
@@ -35,13 +35,13 @@ export class AuthService {
 			name: user.name,
 			username: user.username,
 			userType: userType.name,
-			isStudent: userType.name === 'Student'
+			isStudent: userType.name === 'Student',
 		});
 
 		return {
 			...tokens,
 			privileges: Object.keys(privileges),
-			user: userInfo
+			user: userInfo,
 		};
 	}
 

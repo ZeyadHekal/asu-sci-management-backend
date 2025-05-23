@@ -2,7 +2,7 @@ import { Entity, Column, ManyToOne, PrimaryGeneratedColumn, PrimaryColumn, JoinC
 import { UserType } from 'src/database/users/user-type.entity';
 import { User } from 'src/database/users/user.entity';
 import { ManagementEntity } from 'src/base/base.entity';
-import { PrivilegeCode } from 'src/privileges/definition';
+import { PrivilegeCode } from 'src/db-seeder/data/privileges';
 import { EntityName } from 'src/privileges/entity-map';
 import { UUID } from 'crypto';
 import { OmitType } from '@nestjs/swagger';
@@ -37,11 +37,11 @@ export class UserPrivilege extends OmitType(ManagementEntity, ['id']) {
 	privilege_id: UUID;
 
 	@ManyToOne(() => User, (user) => user.userPrivileges, { lazy: true })
-	@JoinColumn({ name: "user_id" })
+	@JoinColumn({ name: 'user_id' })
 	user: Promise<User>;
 
 	@ManyToOne(() => Privilege, { lazy: true })
-	@JoinColumn({ name: "privilege_id" })
+	@JoinColumn({ name: 'privilege_id' })
 	privilege: Promise<Privilege>;
 
 	@Column('simple-array', { nullable: true })
@@ -50,7 +50,6 @@ export class UserPrivilege extends OmitType(ManagementEntity, ['id']) {
 
 @Entity('user_type_privilege')
 export class UserTypePrivilege extends OmitType(ManagementEntity, ['id']) {
-
 	@PrimaryColumn({ type: 'string' })
 	user_type_id: UUID;
 
@@ -65,7 +64,7 @@ export class UserTypePrivilege extends OmitType(ManagementEntity, ['id']) {
 	privilege: Promise<Privilege>;
 	__privilege__?: Privilege;
 
-	@ManyToOne(() => UserType, (ut) => ut.userTypePrivileges, { lazy: true })
+	@ManyToOne(() => UserType, (ut) => ut.userTypePrivileges, { lazy: true, onDelete: 'CASCADE' })
 	@JoinColumn({ name: 'user_type_id' })
 	userType: Promise<UserType>;
 	__userType__?: UserType;

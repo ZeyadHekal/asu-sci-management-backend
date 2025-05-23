@@ -1,8 +1,6 @@
-
 /**********************/
 /* CHANGE STARTS HERE */
 /**********************/
-
 
 /* Replace tips
     1- Replace the folder name with your module name (e.g. users, event-schedules, etc.)
@@ -13,27 +11,27 @@
 */
 
 export {
-    CreateTemplateDto as CreateDto,
-    UpdateTemplateDto as UpdateDto,
-    TemplateDto as GetDto,
-    TemplateListDto as GetListDto,
-    TemplatePagedDto as PagedDto,
-    TemplatePaginationInput as PaginationInput,
+	CreateTemplateDto as CreateDto,
+	UpdateTemplateDto as UpdateDto,
+	TemplateDto as GetDto,
+	TemplateListDto as GetListDto,
+	TemplatePagedDto as PagedDto,
+	TemplatePaginationInput as PaginationInput,
 } from './dtos';
 
 // Remove the following two lines and replace with import Template from the database
 import { ManagementEntity } from 'src/base/base.entity';
-class Template extends ManagementEntity { }
+class Template extends ManagementEntity {}
 
 export { Template as Entity };
 
 export { TemplateService as Service } from './service';
 
 export const constants = {
-    singular_name: 'template',
-    plural_name: 'templates',
-    entity_id: 'template_id',
-    entity_ids: 'template_ids',
+	singular_name: 'template',
+	plural_name: 'templates',
+	entity_id: 'template_id',
+	entity_ids: 'template_ids',
 };
 
 /**********************/
@@ -44,7 +42,7 @@ export const constants = {
 export { IPaginationOutput } from 'src/base/interfaces/interface.pagination.output';
 export { DeleteDto } from 'src/base/delete.dto';
 export { UUID } from 'crypto';
-export { PrivilegeCode } from 'src/privileges/definition';
+export { PrivilegeCode } from 'src/db-seeder/data/privileges';
 export { RequirePrivileges } from 'src/privileges/guard/decorator';
 export { BaseController } from 'src/base/base.controller';
 export { ApiResponse } from '@nestjs/swagger';

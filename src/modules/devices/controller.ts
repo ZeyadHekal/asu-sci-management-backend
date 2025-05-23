@@ -1,16 +1,31 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import {
-	Entity, CreateDto, UpdateDto, GetDto, GetListDto, DeleteDto,
-	PaginationInput, IPaginationOutput, PagedDto,
-	BaseController, Service, constants, UUID,
-	ApiResponse, ApiOperation, ApiTags, ApiParam,
-	RequirePrivileges, PrivilegeCode,
+	Entity,
+	CreateDto,
+	UpdateDto,
+	GetDto,
+	GetListDto,
+	DeleteDto,
+	PaginationInput,
+	IPaginationOutput,
+	PagedDto,
+	BaseController,
+	Service,
+	constants,
+	UUID,
+	ApiResponse,
+	ApiOperation,
+	ApiTags,
+	ApiParam,
+	RequirePrivileges,
+	PrivilegeCode,
 } from './imports';
 import { DeviceSoftwarePagedDto } from '../softwares/dtos';
+import { DevicePaginationInput } from './dtos';
 
 @ApiTags('devices')
 @RequirePrivileges({ and: [PrivilegeCode.MANAGE_USERS] })
-	@Controller(constants.plural_name)
+@Controller(constants.plural_name)
 export class DeviceController extends BaseController<Entity, CreateDto, UpdateDto, GetDto, GetListDto> {
 	constructor(public readonly service: Service) {
 		super(service, Entity, CreateDto, UpdateDto, GetDto, GetListDto);
@@ -40,7 +55,7 @@ export class DeviceController extends BaseController<Entity, CreateDto, UpdateDt
 	@ApiResponse({ type: PagedDto, status: 200, description: 'Paginated devices retrieved successfully' })
 	@ApiResponse({ status: 401, description: 'Unauthorized' })
 	@ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
-	getPaginated(@Query() input: PaginationInput): Promise<IPaginationOutput<GetDto | GetListDto>> {
+	getPaginated(@Query() input: DevicePaginationInput): Promise<IPaginationOutput<GetDto | GetListDto>> {
 		return super.getPaginated(input);
 	}
 
@@ -86,7 +101,7 @@ export class DeviceController extends BaseController<Entity, CreateDto, UpdateDt
 	@ApiResponse({ status: 401, description: 'Unauthorized' })
 	@ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
 	@ApiResponse({ status: 404, description: 'Not Found - Device does not exist' })
-	async getSoftwares(@Param(constants.entity_id) id: UUID, @Query() input: PaginationInput): Promise<DeviceSoftwarePagedDto> {
+	async getSoftwares(@Param(constants.entity_id) id: UUID, @Query() input: DevicePaginationInput): Promise<DeviceSoftwarePagedDto> {
 		return this.service.getSoftwares(id, input);
 	}
 

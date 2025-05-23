@@ -26,6 +26,26 @@ export class User extends ManagementEntity {
 	@Expose()
 	userTypeId: UUID;
 
+	@Column({ nullable: true })
+	@Expose()
+	email: string;
+
+	@Column({ nullable: true })
+	@Expose()
+	title: string;
+
+	@Column({ nullable: true })
+	@Expose()
+	department: string;
+
+	@Column({ default: true })
+	@Expose()
+	status: boolean;
+
+	@Column({ nullable: true })
+	@Expose()
+	lastLogin: Date;
+
 	@ManyToOne(() => UserType, { nullable: false, lazy: true, onDelete: 'RESTRICT', onUpdate: 'CASCADE' })
 	@JoinColumn({ name: 'user_type_id' })
 	userType: Promise<UserType>;
@@ -43,10 +63,12 @@ export class User extends ManagementEntity {
 	@JoinTable({ name: 'doctors_courses' })
 	courses: Promise<Course[]>;
 
-	@ManyToMany(() => EventSchedule, (eventSchedule) => eventSchedule.assisstant, { lazy: true, cascade: true })
+	@ManyToMany(() => EventSchedule, (eventSchedule) => eventSchedule.assistant, { lazy: true, cascade: true })
 	event_schedules: Promise<EventSchedule[]>;
 
-	async getUserPrivileges(): Promise<Record<string, { resourceIds: UUID[] | null; paramKey: string | null; requiresResource: boolean; entityName: EntityName | null }>> {
+	async getUserPrivileges(): Promise<
+		Record<string, { resourceIds: UUID[] | null; paramKey: string | null; requiresResource: boolean; entityName: EntityName | null }>
+	> {
 		// Build a map keyed by privilege name
 		const privilegeMap: Record<string, { resourceIds: UUID[] | null; paramKey: string | null; requiresResource: boolean; entityName: EntityName | null }> =
 			{};

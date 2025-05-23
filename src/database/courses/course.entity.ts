@@ -1,4 +1,4 @@
-import { Entity, Column, ManyToMany, JoinTable, PrimaryColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, Column, ManyToMany, JoinTable, PrimaryColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { ManagementEntity } from 'src/base/base.entity';
 import { Expose } from 'class-transformer';
 import { User } from '../users/user.entity';
@@ -9,6 +9,9 @@ import { Device } from '../devices/device.entity';
 import { Lab } from '../labs/lab.entity';
 
 @Entity('courses')
+@Index('idx_courses_has_lab', ['hasLab'])
+@Index('idx_courses_subject_code', ['subjectCode'])
+@Index('idx_courses_subject_number', ['subjectCode', 'courseNumber'])
 export class Course extends ManagementEntity {
 	@Column({ nullable: false, unique: true })
 	@Expose()
@@ -50,7 +53,6 @@ export class Course extends ManagementEntity {
 
 @Entity('doctor_courses')
 export class DoctorCourse extends OmitType(ManagementEntity, ['id']) {
-
 	@PrimaryColumn({ type: 'string' })
 	doctor_id: UUID;
 
@@ -70,7 +72,6 @@ export class DoctorCourse extends OmitType(ManagementEntity, ['id']) {
 
 @Entity('student_courses')
 export class StudentCourse extends OmitType(ManagementEntity, ['id']) {
-
 	@PrimaryColumn({ type: 'string' })
 	student_id: UUID;
 
@@ -90,7 +91,6 @@ export class StudentCourse extends OmitType(ManagementEntity, ['id']) {
 
 @Entity('software_courses')
 export class SoftwareCourse extends OmitType(ManagementEntity, ['id']) {
-
 	@PrimaryColumn({ type: 'string' })
 	software_id: UUID;
 

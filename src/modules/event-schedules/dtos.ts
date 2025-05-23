@@ -7,28 +7,27 @@ import { Entity } from './imports';
 import { IsDate, IsString, IsUUID } from 'class-validator';
 
 export class CreateEventScheduleDto {
-
 	@ApiProperty()
 	@IsUUID()
 	@Expose()
 	labId: UUID;
-	
+
 	@ApiProperty()
 	@IsDate()
 	@Expose()
 	dateTime: Date;
-	
+
 	@ApiProperty()
 	@IsString()
 	@Expose()
 	examFiles: string;
-	
+
 	@ApiProperty()
 	@IsUUID()
 	@Expose()
 	assisstantId: UUID;
-	}
-export class UpdateEventScheduleDto extends PartialType(CreateEventScheduleDto) { }
+}
+export class UpdateEventScheduleDto extends PartialType(CreateEventScheduleDto) {}
 
 export class EventScheduleDto extends OmitType(CreateEventScheduleDto, []) {
 	@ApiProperty()
@@ -36,7 +35,7 @@ export class EventScheduleDto extends OmitType(CreateEventScheduleDto, []) {
 	id: UUID;
 }
 
-export class EventScheduleListDto extends OmitType(EventScheduleDto, []) { }
+export class EventScheduleListDto extends OmitType(EventScheduleDto, []) {}
 
 export class EventSchedulePagedDto implements IPaginationOutput<EventScheduleDto> {
 	@ApiProperty({ type: () => EventScheduleDto })
@@ -48,4 +47,4 @@ export class EventSchedulePagedDto implements IPaginationOutput<EventScheduleDto
 	total: number;
 }
 
-export class EventSchedulePaginationInput extends IntersectionType(PaginationInput, Entity) { }
+export class EventSchedulePaginationInput extends IntersectionType(PaginationInput, Entity) {}

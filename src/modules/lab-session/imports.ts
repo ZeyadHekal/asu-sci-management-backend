@@ -12,12 +12,12 @@ import { LabSession } from 'src/database/lab_sessions/lab_session.entity';
 */
 
 export {
-    CreateLabSessionDto as CreateDto,
-    UpdateLabSessionDto as UpdateDto,
-    LabSessionDto as GetDto,
-    LabSessionListDto as GetListDto,
-    LabSessionPagedDto as PagedDto,
-    LabSessionPaginationInput as PaginationInput,
+	CreateLabSessionDto as CreateDto,
+	UpdateLabSessionDto as UpdateDto,
+	LabSessionDto as GetDto,
+	LabSessionListDto as GetListDto,
+	LabSessionPagedDto as PagedDto,
+	LabSessionPaginationInput as PaginationInput,
 } from './dtos';
 
 // LabSession = Entity, remove the following line and import it from the database
@@ -27,10 +27,10 @@ export { LabSession as Entity };
 export { LabSessionService as Service } from './service';
 
 export const constants = {
-    singular_name: 'lab_session',
-    plural_name: 'lab-session',
-    entity_id: 'lab_session_id',
-    entity_ids: 'lab_session_ids',
+	singular_name: 'lab_session',
+	plural_name: 'lab-session',
+	entity_id: 'lab_session_id',
+	entity_ids: 'lab_session_ids',
 };
 
 /**********************/
@@ -41,7 +41,7 @@ export const constants = {
 export { IPaginationOutput } from 'src/base/interfaces/interface.pagination.output';
 export { DeleteDto } from 'src/base/delete.dto';
 export { UUID } from 'crypto';
-export { PrivilegeCode } from 'src/privileges/definition';
+export { PrivilegeCode } from 'src/db-seeder/data/privileges';
 export { RequirePrivileges } from 'src/privileges/guard/decorator';
 export { BaseController } from 'src/base/base.controller';
 export { ApiResponse, ApiOperation, ApiTags, ApiParam } from '@nestjs/swagger';

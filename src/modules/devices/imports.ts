@@ -13,12 +13,12 @@ import { Device } from 'src/database/devices/device.entity';
 */
 
 export {
-    CreateDeviceDto as CreateDto,
-    UpdateDeviceDto as UpdateDto,
-    DeviceDto as GetDto,
-    DeviceListDto as GetListDto,
-    DevicePagedDto as PagedDto,
-    DevicePaginationInput as PaginationInput,
+	CreateDeviceDto as CreateDto,
+	UpdateDeviceDto as UpdateDto,
+	DeviceDto as GetDto,
+	DeviceListDto as GetListDto,
+	DevicePagedDto as PagedDto,
+	DevicePaginationInput as PaginationInput,
 } from './dtos';
 
 // Device = Entity, remove the following line and import it from the database
@@ -28,10 +28,10 @@ export { Device as Entity };
 export { DeviceService as Service } from './service';
 
 export const constants = {
-    singular_name: 'device',
-    plural_name: 'devices',
-    entity_id: 'device_id',
-    entity_ids: 'device_ids',
+	singular_name: 'device',
+	plural_name: 'devices',
+	entity_id: 'device_id',
+	entity_ids: 'device_ids',
 };
 
 /**********************/
@@ -42,7 +42,7 @@ export const constants = {
 export { IPaginationOutput } from 'src/base/interfaces/interface.pagination.output';
 export { DeleteDto } from 'src/base/delete.dto';
 export { UUID } from 'crypto';
-export { PrivilegeCode } from 'src/privileges/definition';
+export { PrivilegeCode } from 'src/db-seeder/data/privileges';
 export { RequirePrivileges } from 'src/privileges/guard/decorator';
 export { BaseController } from 'src/base/base.controller';
 export { ApiResponse, ApiOperation, ApiTags, ApiParam } from '@nestjs/swagger';

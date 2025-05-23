@@ -21,10 +21,9 @@ export class CreateSoftwareDto {
 	@IsString()
 	@Expose()
 	requiredStorage: string;
-
 }
 
-export class UpdateSoftwareDto extends PartialType(CreateSoftwareDto) { }
+export class UpdateSoftwareDto extends PartialType(CreateSoftwareDto) {}
 
 export class SoftwareDto extends OmitType(CreateSoftwareDto, []) {
 	@ApiProperty()
@@ -32,30 +31,30 @@ export class SoftwareDto extends OmitType(CreateSoftwareDto, []) {
 	id: UUID;
 }
 
-export class SoftwareListDto extends OmitType(SoftwareDto, []) { }
+export class SoftwareListDto extends OmitType(SoftwareDto, []) {}
 
 export class DeviceSoftwareListDto {
 	@ApiProperty()
 	@Expose()
 	id: UUID;
-  
+
 	@ApiProperty()
 	@Expose()
 	name: string;
 
 	@ApiProperty()
 	@Expose()
-	hasIssue : Boolean;
-  }
-  export class DeviceSoftwarePagedDto implements IPaginationOutput<DeviceSoftwareListDto> {
+	hasIssue: boolean;
+}
+export class DeviceSoftwarePagedDto implements IPaginationOutput<DeviceSoftwareListDto> {
 	@ApiProperty({ type: () => [DeviceSoftwareListDto] })
 	@Expose()
 	items: DeviceSoftwareListDto[];
-  
+
 	@ApiProperty()
 	@Expose()
 	total: number;
-  }
+}
 
 export class SoftwarePagedDto implements IPaginationOutput<SoftwareDto> {
 	@ApiProperty({ type: () => SoftwareDto })
@@ -65,7 +64,6 @@ export class SoftwarePagedDto implements IPaginationOutput<SoftwareDto> {
 	@ApiProperty()
 	@Expose()
 	total: number;
-
 }
 
-export class SoftwarePaginationInput extends IntersectionType(PaginationInput, Entity) { }
+export class SoftwarePaginationInput extends IntersectionType(PaginationInput, Entity) {}

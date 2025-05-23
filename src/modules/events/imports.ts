@@ -12,12 +12,12 @@ import { Event } from 'src/database/events/event.entity';
 */
 
 export {
-    CreateEventDto as CreateDto,
-    UpdateEventDto as UpdateDto,
-    EventDto as GetDto,
-    EventListDto as GetListDto,
-    EventPagedDto as PagedDto,
-    EventPaginationInput as PaginationInput,
+	CreateEventDto as CreateDto,
+	UpdateEventDto as UpdateDto,
+	EventDto as GetDto,
+	EventListDto as GetListDto,
+	EventPagedDto as PagedDto,
+	EventPaginationInput as PaginationInput,
 } from './dtos';
 
 // Event = Entity, remove the following line and import it from the database
@@ -27,10 +27,10 @@ export { Event as Entity };
 export { EventService as Service } from './service';
 
 export const constants = {
-    singular_name: 'event',
-    plural_name: 'events',
-    entity_id: 'event_id',
-    entity_ids: 'event_ids',
+	singular_name: 'event',
+	plural_name: 'events',
+	entity_id: 'event_id',
+	entity_ids: 'event_ids',
 };
 
 /**********************/
@@ -41,7 +41,7 @@ export const constants = {
 export { IPaginationOutput } from 'src/base/interfaces/interface.pagination.output';
 export { DeleteDto } from 'src/base/delete.dto';
 export { UUID } from 'crypto';
-export { PrivilegeCode } from 'src/privileges/definition';
+export { PrivilegeCode } from 'src/db-seeder/data/privileges';
 export { RequirePrivileges } from 'src/privileges/guard/decorator';
 export { BaseController } from 'src/base/base.controller';
 export { ApiResponse, ApiOperation, ApiTags, ApiParam } from '@nestjs/swagger';

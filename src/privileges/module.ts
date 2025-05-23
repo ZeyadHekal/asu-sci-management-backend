@@ -3,14 +3,17 @@ import { PrivilegeController } from './controller';
 import { PrivilegeService } from './service';
 import { APP_GUARD } from '@nestjs/core';
 import { PrivilegesGuard } from './guard/guard';
+import { WebsocketModule } from 'src/websockets/websocket.module';
 
 @Module({
+	imports: [WebsocketModule],
 	controllers: [PrivilegeController],
-	providers: [PrivilegeService,
+	providers: [
+		PrivilegeService,
 		{
 			provide: APP_GUARD,
-			useClass: PrivilegesGuard
-		}
+			useClass: PrivilegesGuard,
+		},
 	],
 })
-export class PrivilegesModule { }
+export class PrivilegesModule {}

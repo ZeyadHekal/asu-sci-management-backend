@@ -1,5 +1,5 @@
 import { UUID } from 'crypto';
-import { PrivilegeCode } from './definition';
+import { PrivilegeCode } from '../db-seeder/data/privileges';
 import { EntityName } from './entity-map';
 import { ApiProperty, ApiPropertyOptional, OmitType } from '@nestjs/swagger';
 import { IsArray, IsNotEmpty, IsOptional, IsString } from 'class-validator';
@@ -35,8 +35,7 @@ export class PrivilegeAssignmentDto extends PrivilegeDto {
 	resourceIds?: UUID[];
 }
 
-
-export class GenericAssignPrivilegeDto { 
+export class GenericAssignPrivilegeDto {
 	@ApiProperty({ enum: PrivilegeCode, enumName: 'PrivilegeCode' })
 	@IsString()
 	@IsNotEmpty()

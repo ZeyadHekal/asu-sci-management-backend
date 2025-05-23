@@ -1,4 +1,4 @@
-import { PrivilegeDto } from './dtos';
+import { PrivilegeDto } from '../../privileges/dtos';
 
 export enum PrivilegeCode {
 	MANAGE_SYSTEM = 'MANAGE_SYSTEM',
@@ -11,6 +11,7 @@ export enum PrivilegeCode {
 	ASSIST_IN_COURSE = 'ASSIST_IN_COURSE',
 	LAB_MAINTENANCE = 'LAB_MAINTENANCE',
 	REPORT_DEVICE = 'REPORT_DEVICE',
+	MANAGE_COURSES = 'MANAGE_COURSES',
 }
 
 /**
@@ -81,6 +82,12 @@ export const PRIVILEGE_SEED_DATA: PrivilegeDto[] = [
 		code: PrivilegeCode.REPORT_DEVICE,
 		friendlyName: 'Report Device',
 		group: 'Student',
+		requiresResource: false,
+	},
+	{
+		code: PrivilegeCode.MANAGE_COURSES,
+		friendlyName: 'Manage Courses',
+		group: 'Doctor',
 		requiresResource: false,
 	},
 ];

@@ -1,12 +1,12 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { Repository } from 'typeorm';
-import { PRIVILEGE_SEED_DATA } from '../../privileges/definition';
+import { PRIVILEGE_SEED_DATA } from '../data/privileges';
 import { Privilege } from 'src/database/privileges/privilege.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
 export class PrivilegeSeeder {
-	constructor(@InjectRepository(Privilege) private repo: Repository<Privilege>) { }
+	constructor(@InjectRepository(Privilege) private repo: Repository<Privilege>) {}
 
 	public async seed() {
 		const existing = await this.repo.find();

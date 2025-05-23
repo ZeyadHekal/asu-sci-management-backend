@@ -37,7 +37,7 @@ export class EventScheduleService extends BaseService<imports.Entity, imports.Cr
 			throw new BadRequestException('Invalid lab id!');
 		}
 		const user = await this.userRepository.findOneBy({ id: dto.assisstantId });
-		const assisstantType = await this.userTypeRepository.findOneBy({ name: "Assisstant" });
+		const assisstantType = await this.userTypeRepository.findOneBy({ name: 'Assisstant' });
 		if (!user) {
 			throw new BadRequestException('Invalid user id!');
 		}
@@ -46,5 +46,4 @@ export class EventScheduleService extends BaseService<imports.Entity, imports.Cr
 		}
 		return dto;
 	}
-
 }

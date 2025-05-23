@@ -1,0 +1,7 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Don't extend the base controller or base service for new modules or entities
+

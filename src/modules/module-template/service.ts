@@ -13,5 +13,4 @@ export class TemplateService extends BaseService<imports.Entity, imports.CreateD
 	) {
 		super(imports.Entity, imports.CreateDto, imports.UpdateDto, imports.GetDto, imports.GetListDto, repository);
 	}
-
 }

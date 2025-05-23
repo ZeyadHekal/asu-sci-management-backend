@@ -9,7 +9,8 @@ import { PaginationInput } from './pagination.input';
 import { IPaginationOutput } from './interfaces/interface.pagination.output';
 
 export class BaseService<Entity extends ManagementEntity, CreateDto, UpdateDto, GetDto, GetListDto, PageInput extends PaginationInput = PaginationInput>
-	implements IService<Entity, CreateDto, UpdateDto, GetDto, GetListDto, PageInput> {
+	implements IService<Entity, CreateDto, UpdateDto, GetDto, GetListDto, PageInput>
+{
 	constructor(
 		private entity: new () => Entity,
 		private createDto: new () => CreateDto,
@@ -37,14 +38,14 @@ export class BaseService<Entity extends ManagementEntity, CreateDto, UpdateDto, 
 
 	async getPaginated(input: PageInput, filter?: any): Promise<IPaginationOutput<GetListDto | GetDto>> {
 		const [entities, total] = await this.repository.findAndCount({
-			skip: input.limit * (input.page - 1),
+			skip: input.limit * input.page,
 			take: input.limit,
 			order: {
 				[input.sortBy]: input.sortOrder,
 			},
 			where: {
 				...filter,
-				... (input.ids.length > 0 ? { id: In(input.ids) } : {}),
+				...(input.ids.length > 0 ? { id: In(input.ids) } : {}),
 			},
 		});
 		const result = [] as GetDto[];

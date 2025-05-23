@@ -29,5 +29,4 @@ export class LabSessionService extends BaseService<imports.Entity, imports.Creat
 		}
 		return dto;
 	}
-
 }
