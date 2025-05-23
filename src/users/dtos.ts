@@ -50,11 +50,6 @@ export class CreateStudentDto extends OmitType(CreateUserDto, ['userTypeId']) {
 
 export class CreateStaffDto extends OmitType(CreateUserDto, ['userTypeId']) {
 	@ApiProperty()
-	@IsEmail()
-	@Expose()
-	email: string;
-
-	@ApiProperty()
 	@IsString()
 	@Expose()
 	title: string;
@@ -78,9 +73,15 @@ export class UpdateStaffDto {
 
 	@ApiProperty({ required: false })
 	@IsOptional()
-	@IsEmail()
+	@IsString()
 	@Expose()
-	email?: string;
+	username?: string;
+
+	@ApiProperty({ required: false })
+	@IsOptional()
+	@IsString()
+	@Expose()
+	password?: string;
 
 	@ApiProperty({ required: false })
 	@IsOptional()
@@ -153,9 +154,9 @@ export class StaffDto {
 	name: string;
 
 	@ApiProperty()
-	@IsEmail()
+	@IsString()
 	@Expose()
-	email: string;
+	username: string;
 
 	@ApiProperty()
 	@IsString()
@@ -173,6 +174,11 @@ export class StaffDto {
 	userType: string;
 
 	@ApiProperty()
+	@IsUUID()
+	@Expose()
+	userTypeId: UUID;
+
+	@ApiProperty()
 	@IsBoolean()
 	@Expose()
 	status: boolean;
@@ -181,10 +187,20 @@ export class StaffDto {
 	@Expose()
 	lastLogin: Date | null;
 
-	@ApiProperty({ type: [String] })
+	@ApiProperty({ type: [String], description: 'All privileges (user type + user specific) - for compatibility' })
 	@IsArray()
 	@Expose()
 	privileges: string[];
+
+	@ApiProperty({ type: [String], description: 'Privileges inherited from user type (read-only)' })
+	@IsArray()
+	@Expose()
+	userTypePrivileges: string[];
+
+	@ApiProperty({ type: [String], description: 'User-specific privileges (editable)' })
+	@IsArray()
+	@Expose()
+	userPrivileges: string[];
 }
 
 export class UserListDto extends OmitType(UserDto, []) {}

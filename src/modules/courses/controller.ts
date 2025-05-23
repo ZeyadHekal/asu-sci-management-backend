@@ -20,6 +20,8 @@ import {
 	RequirePrivileges,
 	PrivilegeCode,
 } from './imports';
+import { CurrentUser } from 'src/auth/decorators';
+import { User } from 'src/database/users/user.entity';
 
 @ApiTags('courses')
 @RequirePrivileges({ and: [PrivilegeCode.MANAGE_COURSES] })
@@ -48,6 +50,16 @@ export class CourseController extends BaseController<Entity, CreateDto, UpdateDt
 		return super.getAll();
 	}
 
+	@Get('my-courses')
+	@RequirePrivileges({ and: [PrivilegeCode.TEACH_COURSE] })
+	@ApiOperation({ summary: 'Get my courses', description: 'Retrieve courses where the current user is one of the doctors' })
+	@ApiResponse({ type: GetListDto, isArray: true, status: 200, description: 'My courses retrieved successfully' })
+	@ApiResponse({ status: 401, description: 'Unauthorized' })
+	@ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
+	async getMyCourses(@CurrentUser() user: User): Promise<GetListDto[]> {
+		return this.service.getMyCourses(user.id);
+	}
+
 	@Get('statistics')
 	@ApiOperation({ summary: 'Get course statistics', description: 'Retrieve course statistics and counts' })
 	@ApiResponse({ status: 200, description: 'Course statistics retrieved successfully' })
@@ -55,6 +67,15 @@ export class CourseController extends BaseController<Entity, CreateDto, UpdateDt
 	@ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
 	async getStatistics() {
 		return this.service.getCourseStatistics();
+	}
+
+	@Get('validate-data')
+	@ApiOperation({ summary: 'Validate course data', description: 'Validate course data integrity and identify inconsistencies' })
+	@ApiResponse({ status: 200, description: 'Course data validation completed successfully' })
+	@ApiResponse({ status: 401, description: 'Unauthorized' })
+	@ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
+	async validateCourseData() {
+		return this.service.validateCourseData();
 	}
 
 	@Get('paginated')

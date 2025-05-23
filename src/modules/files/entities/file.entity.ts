@@ -1,4 +1,6 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { UUID } from 'crypto';
+import { User } from 'src/database/users/user.entity';
+import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 
 @Entity('files')
 export class File {
@@ -28,6 +30,13 @@ export class File {
 
 	@Column({ default: false })
 	isPublic: boolean;
+
+	// @Column({ name: 'uploaded_by_id', nullable: true })
+	// uploadedById: UUID;
+
+	// @ManyToOne(() => User, { onDelete: 'NO ACTION', onUpdate: 'CASCADE', lazy: true })
+	// @JoinColumn({ name: 'uploaded_by_id' })
+	// uploadedBy: Promise<User>;
 
 	@CreateDateColumn()
 	createdAt: Date;

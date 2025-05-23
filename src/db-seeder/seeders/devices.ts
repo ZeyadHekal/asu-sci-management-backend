@@ -3,8 +3,10 @@ import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Device } from 'src/database/devices/device.entity';
 import { DeviceSpecification } from 'src/database/devices/device-specification.entity';
+import { DeviceSoftware } from 'src/database/devices/devices_softwares.entity';
 import { Lab } from 'src/database/labs/lab.entity';
 import { User } from 'src/database/users/user.entity';
+import { Software } from 'src/database/softwares/software.entity';
 import { DEVICES_CONFIG } from '../data/devices';
 import { ConfigService } from '@nestjs/config';
 
@@ -13,8 +15,10 @@ export class DeviceSeeder {
 	constructor(
 		@InjectRepository(Device) private deviceRepo: Repository<Device>,
 		@InjectRepository(DeviceSpecification) private deviceSpecRepo: Repository<DeviceSpecification>,
+		@InjectRepository(DeviceSoftware) private deviceSoftwareRepo: Repository<DeviceSoftware>,
 		@InjectRepository(Lab) private labRepo: Repository<Lab>,
 		@InjectRepository(User) private userRepo: Repository<User>,
+		@InjectRepository(Software) private softwareRepo: Repository<Software>,
 		private configService: ConfigService,
 	) {}
 
@@ -66,7 +70,29 @@ export class DeviceSeeder {
 				await this.deviceSpecRepo.save(specifications);
 			}
 
-			console.log(`Created device: ${deviceConfig.IPAddress} in ${deviceConfig.labName} lab with ${deviceConfig.specifications.length} specifications`);
+			// Create device-software relationships
+			if (deviceConfig.softwares && deviceConfig.softwares.length > 0) {
+				for (const softwareName of deviceConfig.softwares) {
+					// Find the software by name
+					const software = await this.softwareRepo.findOneBy({ name: softwareName });
+					if (!software) {
+						console.warn(`Software ${softwareName} not found. Skipping software assignment for device ${deviceConfig.IPAddress}`);
+						continue;
+					}
+
+					// Create the device-software relationship
+					const deviceSoftware = this.deviceSoftwareRepo.create({
+						deviceId: savedDevice.id,
+						softwareId: software.id,
+						hasIssue: false, // Default to no issues
+					});
+
+					await this.deviceSoftwareRepo.save(deviceSoftware);
+				}
+			}
+
+			const softwareCount = deviceConfig.softwares?.length || 0;
+			console.log(`Created device: ${deviceConfig.IPAddress} in ${deviceConfig.labName} lab with ${deviceConfig.specifications.length} specifications and ${softwareCount} software installations`);
 		}
 
 		console.log('Device seeding completed');

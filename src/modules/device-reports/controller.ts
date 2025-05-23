@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, Res } from '@nestjs/common';
+import { Response } from 'express';
 import {
     Entity,
     CreateDto,
@@ -82,6 +83,62 @@ export class DeviceReportController {
         return this.service.getDeviceReports(deviceId, input);
     }
 
+    // Admin/Management endpoint - Export reports as XLSX
+    @Get('export/xlsx')
+    @RequirePrivileges({ and: [PrivilegeCode.MANAGE_SYSTEM] })
+    @ApiOperation({ summary: 'Export device reports as XLSX', description: 'Export filtered device reports as Excel file (Admin/Management)' })
+    @ApiResponse({ status: 200, description: 'Excel export successful' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
+    async exportReportsXlsx(@Query() input: DeviceReportPaginationInput, @Res() res: Response): Promise<void> {
+        return this.service.exportReportsXlsx(input, res);
+    }
+
+    // Admin/Management endpoint - Get unresolved reports count for a specific device
+    @Get('device/:device_id/unresolved-count')
+    @RequirePrivileges({ and: [PrivilegeCode.MANAGE_SYSTEM] })
+    @ApiOperation({ summary: 'Get unresolved reports count for device', description: 'Get count of unresolved reports for a specific device (Admin/Management)' })
+    @ApiParam({ name: 'device_id', description: 'Device ID', type: 'string' })
+    @ApiResponse({ status: 200, description: 'Unresolved reports count retrieved successfully' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
+    async getUnresolvedReportsCount(@Param('device_id') deviceId: UUID): Promise<{ count: number }> {
+        return this.service.getUnresolvedReportsCount(deviceId);
+    }
+
+    // Lab Assistant endpoint - Get reports for my assigned devices
+    @Get('my-assigned-reports')
+    @RequirePrivileges({ and: [PrivilegeCode.LAB_ASSISTANT] })
+    @ApiOperation({ summary: 'Get my assigned reports', description: 'Get reports for devices assigned to current lab assistant' })
+    @ApiResponse({ status: 200, description: 'My assigned reports retrieved successfully' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
+    async getMyAssignedReports(@Query() input: DeviceReportPaginationInput, @CurrentUser() user: User): Promise<IPaginationOutput<GetListDto>> {
+        return this.service.getMyAssignedReports(user.id, input);
+    }
+
+    // Lab Assistant endpoint - Get unresolved reports count for my assigned devices
+    @Get('my-unresolved-count')
+    @RequirePrivileges({ and: [PrivilegeCode.LAB_ASSISTANT] })
+    @ApiOperation({ summary: 'Get my unresolved reports count', description: 'Get count of unresolved reports for devices assigned to current lab assistant' })
+    @ApiResponse({ status: 200, description: 'My unresolved reports count retrieved successfully' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
+    async getMyUnresolvedReportsCount(@CurrentUser() user: User): Promise<{ count: number }> {
+        return this.service.getMyUnresolvedReportsCount(user.id);
+    }
+
+    // Admin/Management endpoint - Get total unresolved reports count 
+    @Get('unresolved-count')
+    @RequirePrivileges({ and: [PrivilegeCode.MANAGE_SYSTEM] })
+    @ApiOperation({ summary: 'Get total unresolved reports count', description: 'Get total count of unresolved reports across all devices (Admin/Management)' })
+    @ApiResponse({ status: 200, description: 'Total unresolved reports count retrieved successfully' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
+    async getTotalUnresolvedReportsCount(): Promise<{ count: number }> {
+        return this.service.getTotalUnresolvedReportsCount();
+    }
+
     // Admin/Management endpoint - Get report by ID
     @Get(':' + constants.entity_id)
     @RequirePrivileges({ and: [PrivilegeCode.MANAGE_SYSTEM] })
@@ -120,5 +177,18 @@ export class DeviceReportController {
     @ApiResponse({ status: 404, description: 'Not Found - One or more device reports do not exist' })
     async delete(@Param(constants.entity_ids) ids: string): Promise<{ deletedCount: number }> {
         return this.service.delete(ids);
+    }
+
+    @Post(':reportId/reject')
+    @RequirePrivileges({ and: [PrivilegeCode.MANAGE_SYSTEM] })
+    @ApiOperation({ summary: 'Reject device report', description: 'Reject a device report and provide a reason (Admin/Management)' })
+    @ApiParam({ name: 'reportId', description: 'Device Report ID', type: 'string' })
+    @ApiResponse({ type: GetDto, status: 200, description: 'Device report rejected successfully' })
+    @ApiResponse({ status: 400, description: 'Bad Request - Invalid data' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
+    @ApiResponse({ status: 404, description: 'Not Found - Device report does not exist' })
+    async rejectReport(@Param('reportId') reportId: UUID, @Body() body: { reason: string }): Promise<GetDto> {
+        return this.service.rejectReport(reportId, body.reason);
     }
 } 

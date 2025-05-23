@@ -1,6 +1,6 @@
 import { ApiProperty, OmitType, PartialType } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
-import { IsString, IsUUID, IsOptional, IsEnum, IsNumber, IsDateString } from 'class-validator';
+import { IsString, IsUUID, IsOptional, IsEnum, IsNumber, IsDateString, IsArray, IsISO8601 } from 'class-validator';
 import { UUID } from 'crypto';
 import { IPaginationOutput } from 'src/base/interfaces/interface.pagination.output';
 import { PaginationInput } from 'src/base/pagination.input';
@@ -11,11 +11,6 @@ export class CreateMaintenanceHistoryDto {
     @IsUUID()
     @Expose()
     deviceId: UUID;
-
-    @ApiProperty({ description: 'Technician ID' })
-    @IsUUID()
-    @Expose()
-    technicianId: UUID;
 
     @ApiProperty({ description: 'Related report ID', required: false })
     @IsOptional()
@@ -44,35 +39,17 @@ export class CreateMaintenanceHistoryDto {
     @Expose()
     resolutionNotes?: string;
 
-    @ApiProperty({ description: 'Scheduled date', required: false })
-    @IsOptional()
-    @IsDateString()
-    @Expose()
-    scheduledDate?: Date;
-
-    @ApiProperty({ description: 'Start date', required: false })
-    @IsOptional()
-    @IsDateString()
-    @Expose()
-    startedAt?: Date;
-
     @ApiProperty({ description: 'Completion date', required: false })
     @IsOptional()
-    @IsDateString()
     @Expose()
     completedAt?: Date;
 
-    @ApiProperty({ description: 'Maintenance cost', required: false })
+    @ApiProperty({ description: 'Involved personnel names', required: false, type: [String] })
     @IsOptional()
-    @IsNumber()
+    @IsArray()
+    @IsString({ each: true })
     @Expose()
-    cost?: number;
-
-    @ApiProperty({ description: 'Parts used in maintenance', required: false })
-    @IsOptional()
-    @IsString()
-    @Expose()
-    partsUsed?: string;
+    involvedPersonnel?: string[];
 }
 
 export class UpdateMaintenanceHistoryDto extends PartialType(CreateMaintenanceHistoryDto) { }
@@ -94,9 +71,7 @@ export class MaintenanceHistoryDto extends CreateMaintenanceHistoryDto {
     @Expose()
     deviceName?: string;
 
-    @ApiProperty({ description: 'Technician name', required: false })
-    @Expose()
-    technicianName?: string;
+
 
     @ApiProperty({ description: 'Related report description', required: false })
     @Expose()
@@ -122,11 +97,11 @@ export class MaintenanceHistoryPaginationInput extends PaginationInput {
     @Expose()
     deviceId?: UUID;
 
-    @ApiProperty({ required: false, description: 'Filter by technician ID' })
+    @ApiProperty({ required: false, description: 'Filter by lab ID' })
     @IsOptional()
     @IsUUID()
     @Expose()
-    technicianId?: UUID;
+    labId?: UUID;
 
     @ApiProperty({ enum: MaintenanceStatus, required: false, description: 'Filter by status' })
     @IsOptional()
@@ -145,4 +120,22 @@ export class MaintenanceHistoryPaginationInput extends PaginationInput {
     @IsUUID()
     @Expose()
     relatedReportId?: UUID;
+
+    @ApiProperty({ required: false, description: 'Search across device names, descriptions, and personnel names' })
+    @IsOptional()
+    @IsString()
+    @Expose()
+    search?: string;
+
+    @ApiProperty({ required: false, description: 'Filter by date from (YYYY-MM-DD)' })
+    @IsOptional()
+    @IsString()
+    @Expose()
+    dateFrom?: string;
+
+    @ApiProperty({ required: false, description: 'Filter by date to (YYYY-MM-DD)' })
+    @IsOptional()
+    @IsString()
+    @Expose()
+    dateTo?: string;
 } 

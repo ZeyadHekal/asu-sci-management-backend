@@ -17,6 +17,7 @@ import {
 	DoctorPagedDto,
 	StaffPaginationInput,
 	UpdateStaffDto,
+	UpdateStudentDto,
 	UpdateUserPrivilegesDto,
 } from './dtos';
 import { UUID } from 'crypto';
@@ -24,8 +25,10 @@ import { FileService } from '../modules/files/file.service';
 import { PaginationInput } from 'src/base/pagination.input';
 import { DoctorCourse } from 'src/database/courses/course.entity';
 import { Course } from 'src/database/courses/course.entity';
-import { UserPrivilege, Privilege } from 'src/database/privileges/privilege.entity';
+import { UserPrivilege, Privilege, UserTypePrivilege } from 'src/database/privileges/privilege.entity';
 import { PrivilegeCode } from 'src/db-seeder/data/privileges';
+import { In } from 'typeorm';
+import { Student } from 'src/database/students/student.entity';
 
 @Injectable()
 export class UserService extends BaseService<imports.Entity, imports.CreateDto, imports.UpdateDto, imports.GetDto, imports.GetListDto> {
@@ -37,6 +40,8 @@ export class UserService extends BaseService<imports.Entity, imports.CreateDto, 
 		@InjectRepository(Course) private readonly courseRepository: Repository<Course>,
 		@InjectRepository(UserPrivilege) private readonly userPrivilegeRepository: Repository<UserPrivilege>,
 		@InjectRepository(Privilege) private readonly privilegeRepository: Repository<Privilege>,
+		@InjectRepository(UserTypePrivilege) private readonly userTypePrivilegeRepository: Repository<UserTypePrivilege>,
+		@InjectRepository(Student) private readonly studentRepository: Repository<Student>,
 		private readonly fileService: FileService,
 	) {
 		super(imports.Entity, imports.CreateDto, imports.UpdateDto, imports.GetDto, imports.GetListDto, repository);
@@ -93,6 +98,16 @@ export class UserService extends BaseService<imports.Entity, imports.CreateDto, 
 
 		const createdUser = await this.create(userToCreate);
 
+		// Create corresponding Student record in the students table
+		const student = this.studentRepository.create({
+			id: createdUser.id, // Student ID = User ID for consistency
+			seatNo: dto.seatNo,
+			level: dto.level,
+			program: dto.program,
+			photo: photoUrl,
+		});
+		await this.studentRepository.save(student);
+
 		// Create a student DTO directly from input DTO and created user
 		const result = new StudentDto();
 		result.id = createdUser.id;
@@ -143,7 +158,7 @@ export class UserService extends BaseService<imports.Entity, imports.CreateDto, 
 		const dto = new StaffDto();
 		dto.id = user.id;
 		dto.name = user.name;
-		dto.email = user.email || `${user.username}@example.com`;
+		dto.username = user.username;
 
 		// Handle title - use database value or generate from user type
 		if (user.title) {
@@ -166,6 +181,9 @@ export class UserService extends BaseService<imports.Entity, imports.CreateDto, 
 		// Handle lastLogin - ensure it's always present, use null if not available
 		dto.lastLogin = user.lastLogin || null;
 
+		// Set userTypeId
+		dto.userTypeId = user.userTypeId;
+
 		// Get user type name - ensure it's always a string name for the table
 		if (user.userType) {
 			dto.userType = typeof user.userType === 'string' ? user.userType : user.userType.name;
@@ -174,12 +192,31 @@ export class UserService extends BaseService<imports.Entity, imports.CreateDto, 
 			dto.userType = userType?.name || 'Unknown';
 		}
 
-		// Get user privileges
+		// Get user privileges separately
 		try {
-			const privilegeMap = await user.getUserPrivileges();
-			dto.privileges = Object.keys(privilegeMap);
+			// Get user type privileges
+			const userType = await user.userType;
+			const userTypePrivileges = await userType.userTypePrivileges;
+			dto.userTypePrivileges = [];
+			for (const utp of userTypePrivileges) {
+				const privilege = await utp.privilege;
+				dto.userTypePrivileges.push(privilege.code);
+			}
+
+			// Get user-specific privileges
+			const userPrivileges = await user.userPrivileges;
+			dto.userPrivileges = [];
+			for (const up of userPrivileges) {
+				const privilege = await up.privilege;
+				dto.userPrivileges.push(privilege.code);
+			}
+
+			// Combine for compatibility (existing logic that depends on this)
+			dto.privileges = [...new Set([...dto.userTypePrivileges, ...dto.userPrivileges])];
 		} catch {
 			dto.privileges = [];
+			dto.userTypePrivileges = [];
+			dto.userPrivileges = [];
 		}
 
 		return dto;
@@ -264,7 +301,7 @@ export class UserService extends BaseService<imports.Entity, imports.CreateDto, 
 		return this.mapToStaffDto(user);
 	}
 
-	async updateStudent(id: UUID, dto: imports.UpdateDto): Promise<StudentDto> {
+	async updateStudent(id: UUID, dto: UpdateStudentDto): Promise<StudentDto> {
 		const user = await this.repository.findOne({
 			where: { id },
 			relations: ['userType'],
@@ -279,15 +316,34 @@ export class UserService extends BaseService<imports.Entity, imports.CreateDto, 
 			throw new BadRequestException('User is not a student');
 		}
 
-		// Ensure userTypeId remains for Student
-		if (dto.userTypeId) {
-			const newUserType = await this.userTypeRepository.findOneBy({ id: dto.userTypeId });
-			if (!newUserType || newUserType.name !== 'Student') {
-				throw new BadRequestException('Cannot change student to non-student type');
+		const updatedUser = await this.update(id, dto);
+
+		// Update corresponding Student record if student-specific fields are being updated
+		const studentFieldsToUpdate: any = {};
+		if ('seatNo' in dto) studentFieldsToUpdate.seatNo = dto.seatNo;
+		if ('level' in dto) studentFieldsToUpdate.level = dto.level;
+		if ('program' in dto) studentFieldsToUpdate.program = dto.program;
+		if ('photo' in dto) studentFieldsToUpdate.photo = dto.photo;
+
+		if (Object.keys(studentFieldsToUpdate).length > 0) {
+			// Find or create the student record
+			let student = await this.studentRepository.findOneBy({ id });
+			if (!student) {
+				// Create student record if it doesn't exist (for legacy users)
+				student = this.studentRepository.create({
+					id: id,
+					seatNo: dto.seatNo || 0,
+					level: dto.level || 1,
+					program: dto.program || 'Computer Science',
+					photo: dto.photo || null,
+				});
+			} else {
+				// Update existing student record
+				Object.assign(student, studentFieldsToUpdate);
 			}
+			await this.studentRepository.save(student);
 		}
 
-		const updatedUser = await this.update(id, dto);
 		return this.mapToStudentDto(updatedUser);
 	}
 
@@ -306,9 +362,26 @@ export class UserService extends BaseService<imports.Entity, imports.CreateDto, 
 			throw new BadRequestException('User is not a staff member');
 		}
 
+		// Hash password if provided
+		if (dto.password) {
+			dto.password = await bcrypt.hash(dto.password, parseInt(this.configService.get<string>('PASSWORD_SALT', '10')));
+		}
+
+
+		// Check for username uniqueness if username is being updated
+		if (dto.username && dto.username !== user.username) {
+			const existingUserWithUsername = await this.repository.findOne({
+				where: { username: dto.username },
+			});
+			if (existingUserWithUsername && existingUserWithUsername.id !== id) {
+				throw new BadRequestException('Username is already in use by another user');
+			}
+		}
+		let newUserType = null;
+
 		// Validate userType change if provided
-		if (dto.userTypeId) {
-			const newUserType = await this.userTypeRepository.findOneBy({ id: dto.userTypeId });
+		if (dto.userTypeId !== user.userTypeId) {
+			newUserType = await this.userTypeRepository.findOneBy({ id: dto.userTypeId });
 			if (!newUserType) {
 				throw new BadRequestException('Invalid user type');
 			}
@@ -317,20 +390,12 @@ export class UserService extends BaseService<imports.Entity, imports.CreateDto, 
 			}
 		}
 
-		// Check for email uniqueness if email is being updated
-		if (dto.email && dto.email !== user.email) {
-			const existingUserWithEmail = await this.repository.findOne({
-				where: { email: dto.email },
-			});
-			if (existingUserWithEmail && existingUserWithEmail.id !== id) {
-				throw new BadRequestException('Email is already in use by another user');
-			}
-		}
-
 		// Update the user entity
 		Object.assign(user, dto);
-		const updatedUser = await this.repository.save(user);
-
+		const updatedUser = await user.save();
+		if (newUserType) {
+			await this.repository.update(id, { userTypeId: newUserType.id });
+		}
 		return this.mapToStaffDto(updatedUser);
 	}
 
@@ -411,7 +476,7 @@ export class UserService extends BaseService<imports.Entity, imports.CreateDto, 
 		dto.id = user.id;
 		dto.name = user.name;
 		dto.username = user.username;
-		dto.email = user.email || `${user.username}@example.com`;
+		dto.email = user.email || user.username;
 		dto.title = user.title || 'Professor';
 		dto.department = user.department || 'Computer Science';
 		dto.status = user.status === undefined ? true : user.status;
@@ -436,23 +501,93 @@ export class UserService extends BaseService<imports.Entity, imports.CreateDto, 
 	}
 
 	async getAllDoctors(): Promise<DoctorDto[]> {
-		// Get all users with TEACH_COURSE privilege
-		const doctorsWithPrivilege = await this.userPrivilegeRepository
-			.createQueryBuilder('up')
-			.innerJoin('up.privilege', 'privilege')
-			.innerJoin('up.user', 'user')
-			.where('privilege.code = :code', { code: PrivilegeCode.TEACH_COURSE })
-			.getMany();
-
-		const doctorIds = doctorsWithPrivilege.map((up) => up.user_id);
-
-		if (doctorIds.length === 0) {
+		// Find the TEACH_COURSE privilege
+		const teachCoursePrivilege = await this.privilegeRepository.findOneBy({ code: PrivilegeCode.TEACH_COURSE });
+		if (!teachCoursePrivilege) {
 			return [];
 		}
 
-		const doctors = await this.repository.findByIds(doctorIds);
+		// Get all users with TEACH_COURSE privilege (both direct and through user type)
+		const userPrivileges = await this.userPrivilegeRepository.find({
+			where: { privilege_id: teachCoursePrivilege.id },
+		});
 
-		return Promise.all(doctors.map((doctor) => this.mapToDoctorDto(doctor)));
+		const directUserIds = userPrivileges.map(up => up.user_id);
+
+		// Also get users whose user type has this privilege
+		const userTypePrivileges = await this.userTypePrivilegeRepository.find({
+			where: { privilege_id: teachCoursePrivilege.id },
+		});
+
+		const userTypeIds = userTypePrivileges.map(utp => utp.user_type_id);
+
+		// Get users with those user types
+		const usersWithTypePrivilege = userTypeIds.length > 0
+			? await this.repository.find({ where: { userTypeId: In(userTypeIds) } })
+			: [];
+
+		const userTypeUserIds = usersWithTypePrivilege.map(user => user.id);
+
+		// Combine and deduplicate user IDs
+		const allUserIds = [...new Set([...directUserIds, ...userTypeUserIds])];
+
+		if (allUserIds.length === 0) {
+			return [];
+		}
+
+		// Get full user entities with relations
+		const fullUsers = await this.repository.find({
+			where: { id: In(allUserIds) },
+			relations: ['userType', 'userPrivileges', 'userPrivileges.privilege']
+		});
+
+		// Map to DTOs
+		return Promise.all(fullUsers.map(user => this.mapToDoctorDto(user)));
+	}
+
+	async getAllAssistants(): Promise<StaffDto[]> {
+		// Find the LAB_ASSISTANT privilege
+		const labAssistantPrivilege = await this.privilegeRepository.findOneBy({ code: PrivilegeCode.LAB_ASSISTANT });
+		if (!labAssistantPrivilege) {
+			return [];
+		}
+
+		// Get all users with LAB_ASSISTANT privilege (both direct and through user type)
+		const userPrivileges = await this.userPrivilegeRepository.find({
+			where: { privilege_id: labAssistantPrivilege.id },
+		});
+
+		const directUserIds = userPrivileges.map(up => up.user_id);
+
+		// Also get users whose user type has this privilege
+		const userTypePrivileges = await this.userTypePrivilegeRepository.find({
+			where: { privilege_id: labAssistantPrivilege.id },
+		});
+
+		const userTypeIds = userTypePrivileges.map(utp => utp.user_type_id);
+
+		// Get users with those user types
+		const usersWithTypePrivilege = userTypeIds.length > 0
+			? await this.repository.find({ where: { userTypeId: In(userTypeIds) } })
+			: [];
+
+		const userTypeUserIds = usersWithTypePrivilege.map(user => user.id);
+
+		// Combine and deduplicate user IDs
+		const allUserIds = [...new Set([...directUserIds, ...userTypeUserIds])];
+
+		if (allUserIds.length === 0) {
+			return [];
+		}
+
+		// Get full user entities with relations
+		const fullUsers = await this.repository.find({
+			where: { id: In(allUserIds) },
+			relations: ['userType', 'userPrivileges', 'userPrivileges.privilege']
+		});
+
+		// Map to DTOs
+		return Promise.all(fullUsers.map(user => this.mapToStaffDto(user)));
 	}
 
 	async getPaginatedDoctors(input: PaginationInput): Promise<DoctorPagedDto> {
@@ -546,6 +681,9 @@ export class UserService extends BaseService<imports.Entity, imports.CreateDto, 
 		if (userType.name !== 'Student') {
 			throw new BadRequestException('User is not a student');
 		}
+
+		// Delete corresponding Student record first
+		await this.studentRepository.delete({ id });
 
 		// Delete user-specific privileges first
 		await this.userPrivilegeRepository.delete({ user_id: id });

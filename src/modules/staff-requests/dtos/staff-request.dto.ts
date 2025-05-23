@@ -1,6 +1,6 @@
 import { ApiProperty, OmitType, PartialType } from '@nestjs/swagger';
-import { IsString, IsEmail, IsUUID, IsOptional, IsEnum, IsStrongPassword } from 'class-validator';
-import { Expose } from 'class-transformer';
+import { IsString, IsEnum, IsOptional, IsUUID, MinLength } from 'class-validator';
+import { Expose, Transform } from 'class-transformer';
 import { UUID } from 'crypto';
 import { StaffRequestStatus } from 'src/database/staff-requests/staff-request.entity';
 
@@ -11,9 +11,9 @@ export class CreateStaffRequestDto {
 	name: string;
 
 	@ApiProperty()
-	@IsEmail()
+	@IsString()
 	@Expose()
-	email: string;
+	username: string;
 
 	@ApiProperty()
 	@IsString()
@@ -26,17 +26,55 @@ export class CreateStaffRequestDto {
 	department: string;
 
 	@ApiProperty({ example: 'Abcd@1234' })
-	@IsStrongPassword({}, { message: 'Password must be at least of length 8 and includes numbers, lower and upper case letters and symbols.' })
+	@IsString()
+	@MinLength(8)
 	@Expose()
 	password: string;
 
 	@ApiProperty({ example: 'Abcd@1234' })
 	@IsString()
+	@MinLength(8)
 	@Expose()
 	confirmPassword: string;
 
 	@ApiProperty({ type: 'string', format: 'binary', description: 'ID photo (PNG, JPG, JPEG up to 10MB)' })
-	idPhoto: Express.Multer.File;
+	@IsOptional()
+	@Expose()
+	idPhoto?: any;
+}
+
+export class ApproveStaffRequestDto {
+	@ApiProperty({ description: 'Name of the staff member' })
+	@IsString()
+	@Expose()
+	name: string;
+
+	@ApiProperty({ description: 'Username for the staff member' })
+	@IsString()
+	@Expose()
+	username: string;
+
+	@ApiProperty({ description: 'Title/Position of the staff member' })
+	@IsString()
+	@Expose()
+	title: string;
+
+	@ApiProperty({ description: 'Department of the staff member' })
+	@IsString()
+	@Expose()
+	department: string;
+
+	@ApiProperty({ description: 'User type ID to assign to the approved staff member' })
+	@IsUUID()
+	@Expose()
+	userTypeId: UUID;
+}
+
+export class RejectStaffRequestDto {
+	@ApiProperty({ description: 'Reason for rejecting the staff request' })
+	@IsString()
+	@Expose()
+	reason: string;
 }
 
 export class UpdateStaffRequestDto extends PartialType(CreateStaffRequestDto) {
@@ -87,10 +125,12 @@ export class StaffRequestDto extends OmitType(CreateStaffRequestDto, ['password'
 
 	@ApiProperty()
 	@Expose()
+	@Transform(({ obj }) => obj.created_at)
 	createdAt: Date;
 
 	@ApiProperty()
 	@Expose()
+	@Transform(({ obj }) => obj.updated_at)
 	updatedAt: Date;
 
 	@IsString()

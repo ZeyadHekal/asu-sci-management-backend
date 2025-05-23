@@ -19,6 +19,10 @@ export {
 	DeviceListDto as GetListDto,
 	DevicePagedDto as PagedDto,
 	DevicePaginationInput as PaginationInput,
+	AddDeviceSoftwareDto,
+	UpdateDeviceSoftwareDto,
+	UpdateDeviceSoftwareListDto,
+	DeviceDetailsDto,
 } from './dtos';
 
 // Device = Entity, remove the following line and import it from the database

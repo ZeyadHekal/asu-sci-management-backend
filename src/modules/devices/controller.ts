@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, Put } from '@nestjs/common';
 import {
 	Entity,
 	CreateDto,
@@ -19,12 +19,15 @@ import {
 	ApiParam,
 	RequirePrivileges,
 	PrivilegeCode,
+	DeviceDetailsDto,
 } from './imports';
 import { DeviceSoftwarePagedDto } from '../softwares/dtos';
-import { DevicePaginationInput } from './dtos';
+import { DevicePaginationInput, UpdateDeviceSoftwareDto, AddDeviceSoftwareDto, UpdateDeviceSoftwareListDto, MaintenanceUpdateDto } from './dtos';
+import { CurrentUser } from 'src/auth/decorators';
+import { User } from 'src/database/users/user.entity';
 
 @ApiTags('devices')
-	@RequirePrivileges({ and: [PrivilegeCode.MANAGE_SYSTEM] })
+@RequirePrivileges({ and: [PrivilegeCode.MANAGE_LABS] })
 @Controller(constants.plural_name)
 export class DeviceController extends BaseController<Entity, CreateDto, UpdateDto, GetDto, GetListDto> {
 	constructor(public readonly service: Service) {
@@ -39,6 +42,18 @@ export class DeviceController extends BaseController<Entity, CreateDto, UpdateDt
 	@ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
 	create(@Body() createDto: CreateDto): Promise<GetDto> {
 		return super.create(createDto);
+	}
+
+	// Lab Assistant endpoint - Get my assigned devices
+	@Get('my-assigned')
+	@RequirePrivileges({ and: [PrivilegeCode.LAB_ASSISTANT] })
+	@ApiOperation({ summary: 'Get my assigned devices', description: 'Get devices assigned to current lab assistant' })
+	@ApiResponse({ status: 200, description: 'My assigned devices retrieved successfully' })
+	@ApiResponse({ status: 401, description: 'Unauthorized' })
+	@ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
+	async getMyAssignedDevices(@Query() input: DevicePaginationInput, @CurrentUser() user: User): Promise<IPaginationOutput<GetListDto>> {
+		const modifiedInput = { ...input, assistantId: user.id };
+		return this.service.getPaginated(modifiedInput) as Promise<IPaginationOutput<GetListDto>>;
 	}
 
 	@Get()
@@ -68,6 +83,17 @@ export class DeviceController extends BaseController<Entity, CreateDto, UpdateDt
 	@ApiResponse({ status: 404, description: 'Not Found - Device does not exist' })
 	getById(@Param(constants.entity_id) id: UUID): Promise<GetDto> {
 		return super.getById(id);
+	}
+
+	@Get(':' + constants.entity_id + '/details')
+	@ApiOperation({ summary: 'Get comprehensive device details', description: 'Retrieve comprehensive device information including lab, assistant, specifications, software, and statistics' })
+	@ApiParam({ name: constants.entity_id, description: 'Device ID', type: 'string' })
+	@ApiResponse({ type: DeviceDetailsDto, status: 200, description: 'Device details retrieved successfully' })
+	@ApiResponse({ status: 401, description: 'Unauthorized' })
+	@ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
+	@ApiResponse({ status: 404, description: 'Not Found - Device does not exist' })
+	getDeviceDetails(@Param(constants.entity_id) id: UUID): Promise<DeviceDetailsDto> {
+		return this.service.getDeviceDetails(id);
 	}
 
 	@Patch(':' + constants.entity_id)
@@ -113,7 +139,7 @@ export class DeviceController extends BaseController<Entity, CreateDto, UpdateDt
 	@ApiResponse({ status: 401, description: 'Unauthorized' })
 	@ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
 	@ApiResponse({ status: 404, description: 'Not Found - Device does not exist' })
-	async getDeviceReports(@Param(constants.entity_id) id: UUID, @Query() input: any): Promise<any> {
+	async getDeviceReports(@Param(constants.entity_id) id: UUID, @Query() input: PaginationInput): Promise<any> {
 		return this.service.getDeviceReports(id, input);
 	}
 
@@ -125,7 +151,7 @@ export class DeviceController extends BaseController<Entity, CreateDto, UpdateDt
 	@ApiResponse({ status: 401, description: 'Unauthorized' })
 	@ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
 	@ApiResponse({ status: 404, description: 'Not Found - Device does not exist' })
-	async getDeviceMaintenanceHistory(@Param(constants.entity_id) id: UUID, @Query() input: any): Promise<any> {
+	async getDeviceMaintenanceHistory(@Param(constants.entity_id) id: UUID, @Query() input: PaginationInput): Promise<any> {
 		return this.service.getDeviceMaintenanceHistory(id, input);
 	}
 
@@ -137,7 +163,69 @@ export class DeviceController extends BaseController<Entity, CreateDto, UpdateDt
 	@ApiResponse({ status: 401, description: 'Unauthorized' })
 	@ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
 	@ApiResponse({ status: 404, description: 'Not Found - Device does not exist' })
-	async getDeviceLoginHistory(@Param(constants.entity_id) id: UUID, @Query() input: any): Promise<any> {
+	async getDeviceLoginHistory(@Param(constants.entity_id) id: UUID, @Query() input: PaginationInput): Promise<any> {
 		return this.service.getDeviceLoginHistory(id, input);
+	}
+
+	@Post(`:${constants.entity_id}/softwares`)
+	@ApiOperation({ summary: 'Add software to device', description: 'Add a new software to a specific device' })
+	@ApiParam({ name: constants.entity_id, description: 'Device ID', type: 'string' })
+	@ApiResponse({ type: GetDto, status: 201, description: 'Software added successfully' })
+	@ApiResponse({ status: 400, description: 'Bad Request - Invalid data' })
+	@ApiResponse({ status: 401, description: 'Unauthorized' })
+	@ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
+	@ApiResponse({ status: 404, description: 'Not Found - Device does not exist' })
+	addSoftware(@Param(constants.entity_id) id: UUID, @Body() addDto: AddDeviceSoftwareDto): Promise<GetDto> {
+		return this.service.addSoftware(id, addDto);
+	}
+
+	@Patch(`:${constants.entity_id}/softwares/:softwareId`)
+	@ApiOperation({ summary: 'Update software on device', description: 'Update an existing software on a specific device' })
+	@ApiParam({ name: constants.entity_id, description: 'Device ID', type: 'string' })
+	@ApiParam({ name: 'softwareId', description: 'Software ID', type: 'string' })
+	@ApiResponse({ type: GetDto, status: 200, description: 'Software updated successfully' })
+	@ApiResponse({ status: 400, description: 'Bad Request - Invalid data' })
+	@ApiResponse({ status: 401, description: 'Unauthorized' })
+	@ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
+	@ApiResponse({ status: 404, description: 'Not Found - Device or software does not exist' })
+	updateSoftware(@Param(constants.entity_id) id: UUID, @Param('softwareId') softwareId: string, @Body() updateDto: UpdateDeviceSoftwareDto): Promise<GetDto> {
+		return this.service.updateSoftware(id, softwareId, updateDto);
+	}
+
+	@Delete(`:${constants.entity_id}/softwares/:softwareId`)
+	@ApiOperation({ summary: 'Remove software from device', description: 'Remove an existing software from a specific device' })
+	@ApiParam({ name: constants.entity_id, description: 'Device ID', type: 'string' })
+	@ApiParam({ name: 'softwareId', description: 'Software ID', type: 'string' })
+	@ApiResponse({ type: DeleteDto, status: 200, description: 'Software removed successfully' })
+	@ApiResponse({ status: 401, description: 'Unauthorized' })
+	@ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
+	@ApiResponse({ status: 404, description: 'Not Found - Device or software does not exist' })
+	removeSoftware(@Param(constants.entity_id) id: UUID, @Param('softwareId') softwareId: string): Promise<DeleteDto> {
+		return this.service.removeSoftware(id, softwareId);
+	}
+
+	@Put(`:${constants.entity_id}/software-list`)
+	@ApiOperation({ summary: 'Update software list on device', description: 'Update the list of software on a specific device' })
+	@ApiParam({ name: constants.entity_id, description: 'Device ID', type: 'string' })
+	@ApiResponse({ type: GetDto, status: 200, description: 'Software list updated successfully' })
+	@ApiResponse({ status: 400, description: 'Bad Request - Invalid data' })
+	@ApiResponse({ status: 401, description: 'Unauthorized' })
+	@ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
+	@ApiResponse({ status: 404, description: 'Not Found - Device does not exist' })
+	updateSoftwareList(@Param(constants.entity_id) id: UUID, @Body() updateDto: UpdateDeviceSoftwareListDto): Promise<GetDto> {
+		return this.service.updateSoftwareList(id, updateDto);
+	}
+
+	@Post(`:${constants.entity_id}/maintenance`)
+	@RequirePrivileges({ and: [PrivilegeCode.LAB_ASSISTANT] })
+	@ApiOperation({ summary: 'Create maintenance update', description: 'Create a maintenance update for a device' })
+	@ApiParam({ name: constants.entity_id, description: 'Device ID', type: 'string' })
+	@ApiResponse({ status: 201, description: 'Maintenance update created successfully' })
+	@ApiResponse({ status: 400, description: 'Bad Request - Invalid data' })
+	@ApiResponse({ status: 401, description: 'Unauthorized' })
+	@ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
+	@ApiResponse({ status: 404, description: 'Not Found - Device does not exist' })
+	async createMaintenanceUpdate(@Param(constants.entity_id) id: UUID, @Body() updateDto: MaintenanceUpdateDto, @CurrentUser() user: User): Promise<any> {
+		return this.service.createMaintenanceUpdate(id, updateDto, user.id);
 	}
 }

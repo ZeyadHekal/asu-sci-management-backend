@@ -22,7 +22,7 @@ export {
 
 // Event = Entity, remove the following line and import it from the database
 // export { Event as Entity } from 'src/database/events/event.entity';
-export { Event as Entity };
+export { Event as Entity, EventType, LocationType } from 'src/database/events/event.entity';
 
 export { EventService as Service } from './service';
 
@@ -45,3 +45,6 @@ export { PrivilegeCode } from 'src/db-seeder/data/privileges';
 export { RequirePrivileges } from 'src/privileges/guard/decorator';
 export { BaseController } from 'src/base/base.controller';
 export { ApiResponse, ApiOperation, ApiTags, ApiParam } from '@nestjs/swagger';
+
+// ADD: Export new DTOs
+export { GroupCreationSimulationDto, ProposedGroupDto, LabAvailabilityDto, CreateEventWithGroupsDto, ProposedGroupSimpleDto, GroupScheduleDto, StudentGradesSummaryDto, EventMarkDto, MoveStudentBetweenGroupsDto, AddGroupToSimulationDto, ExamModelForEventDto, GroupModelAssignmentDto, UploadExamModelFilesResponseDto } from './dtos';

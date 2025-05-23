@@ -10,6 +10,7 @@ export interface DeviceConfig {
 	assistantUsername: string;
 	hasIssue?: boolean;
 	specifications: DeviceSpecConfig[];
+	softwares?: string[]; // Software names to install on this device
 }
 
 export const DEVICES_CONFIG: DeviceConfig[] = [
@@ -18,7 +19,7 @@ export const DEVICES_CONFIG: DeviceConfig[] = [
 		IPAddress: '192.168.1.101',
 		name: 'Abd El Salam Workstation 01',
 		labName: 'Abd El Salam',
-		assistantUsername: 'admin',
+		assistantUsername: 'ahmed.hassan',
 		hasIssue: false,
 		specifications: [
 			{ category: 'Memory', value: 'DDR4 RAM 8GB' },
@@ -26,12 +27,13 @@ export const DEVICES_CONFIG: DeviceConfig[] = [
 			{ category: 'Processor', value: 'Intel Core i5-9400 2.9GHz' },
 			{ category: 'Graphics', value: 'NVIDIA GeForce GTX 1650 4GB' },
 		],
+		softwares: ['VS Code', 'Visual Studio'],
 	},
 	{
 		IPAddress: '192.168.1.102',
 		name: 'Abd El Salam Workstation 02',
 		labName: 'Abd El Salam',
-		assistantUsername: 'admin',
+		assistantUsername: 'ahmed.hassan',
 		hasIssue: false,
 		specifications: [
 			{ category: 'Memory', value: 'DDR4 RAM 16GB' },
@@ -39,12 +41,13 @@ export const DEVICES_CONFIG: DeviceConfig[] = [
 			{ category: 'Processor', value: 'Intel Core i7-10700 3.6GHz' },
 			{ category: 'Graphics', value: 'NVIDIA GeForce RTX 3060 8GB' },
 		],
+		softwares: ['VS Code', 'Visual Studio', 'Matlab', 'Unity'],
 	},
 	{
 		IPAddress: '192.168.1.103',
 		name: 'Abd El Salam Workstation 03',
 		labName: 'Abd El Salam',
-		assistantUsername: 'admin',
+		assistantUsername: 'fatima.ali',
 		hasIssue: true,
 		specifications: [
 			{ category: 'Memory', value: 'DDR4 RAM 8GB' },
@@ -52,12 +55,13 @@ export const DEVICES_CONFIG: DeviceConfig[] = [
 			{ category: 'Processor', value: 'Intel Core i3-8100 3.6GHz' },
 			{ category: 'Graphics', value: 'Intel UHD Graphics 630' },
 		],
+		softwares: ['VS Code'],
 	},
 	{
 		IPAddress: '192.168.1.104',
 		name: 'Abd El Salam Workstation 04',
 		labName: 'Abd El Salam',
-		assistantUsername: 'admin',
+		assistantUsername: 'fatima.ali',
 		hasIssue: false,
 		specifications: [
 			{ category: 'Memory', value: 'DDR4 RAM 16GB' },
@@ -65,12 +69,13 @@ export const DEVICES_CONFIG: DeviceConfig[] = [
 			{ category: 'Processor', value: 'AMD Ryzen 5 3600 3.6GHz' },
 			{ category: 'Graphics', value: 'AMD Radeon RX 580 8GB' },
 		],
+		softwares: ['VS Code', 'Matlab'],
 	},
 	{
 		IPAddress: '192.168.1.105',
 		name: 'Abd El Salam Workstation 05',
 		labName: 'Abd El Salam',
-		assistantUsername: 'admin',
+		assistantUsername: 'omar.mahmoud',
 		hasIssue: false,
 		specifications: [
 			{ category: 'Memory', value: 'DDR4 RAM 8GB' },
@@ -78,12 +83,13 @@ export const DEVICES_CONFIG: DeviceConfig[] = [
 			{ category: 'Processor', value: 'Intel Core i5-9400 2.9GHz' },
 			{ category: 'Graphics', value: 'NVIDIA GeForce GTX 1050 Ti 4GB' },
 		],
+		softwares: ['VS Code', 'Unity'],
 	},
 	{
 		IPAddress: '192.168.1.106',
 		name: 'Abd El Salam Workstation 06',
 		labName: 'Abd El Salam',
-		assistantUsername: 'admin',
+		assistantUsername: 'omar.mahmoud',
 		hasIssue: false,
 		specifications: [
 			{ category: 'Memory', value: 'DDR4 RAM 32GB' },
@@ -91,12 +97,13 @@ export const DEVICES_CONFIG: DeviceConfig[] = [
 			{ category: 'Processor', value: 'Intel Core i9-11900K 3.5GHz' },
 			{ category: 'Graphics', value: 'NVIDIA GeForce RTX 3080 10GB' },
 		],
+		softwares: ['VS Code', 'Visual Studio', 'Matlab', 'Unity'],
 	},
 	{
 		IPAddress: '192.168.1.107',
 		name: 'Abd El Salam Workstation 07',
 		labName: 'Abd El Salam',
-		assistantUsername: 'admin',
+		assistantUsername: 'sara.ibrahim',
 		hasIssue: false,
 		specifications: [
 			{ category: 'Memory', value: 'DDR4 RAM 12GB' },
@@ -109,7 +116,7 @@ export const DEVICES_CONFIG: DeviceConfig[] = [
 		IPAddress: '192.168.1.108',
 		name: 'Abd El Salam Workstation 08',
 		labName: 'Abd El Salam',
-		assistantUsername: 'admin',
+		assistantUsername: 'sara.ibrahim',
 		hasIssue: false,
 		specifications: [
 			{ category: 'Memory', value: 'DDR4 RAM 8GB' },
@@ -122,7 +129,7 @@ export const DEVICES_CONFIG: DeviceConfig[] = [
 		IPAddress: '192.168.1.109',
 		name: 'Abd El Salam Workstation 09',
 		labName: 'Abd El Salam',
-		assistantUsername: 'admin',
+		assistantUsername: 'youssef.abdel',
 		hasIssue: false,
 		specifications: [
 			{ category: 'Memory', value: 'DDR4 RAM 16GB' },
@@ -135,7 +142,7 @@ export const DEVICES_CONFIG: DeviceConfig[] = [
 		IPAddress: '192.168.1.110',
 		name: 'Abd El Salam Workstation 10',
 		labName: 'Abd El Salam',
-		assistantUsername: 'admin',
+		assistantUsername: 'youssef.abdel',
 		hasIssue: true,
 		specifications: [
 			{ category: 'Memory', value: 'DDR4 RAM 4GB' },
@@ -148,7 +155,7 @@ export const DEVICES_CONFIG: DeviceConfig[] = [
 		IPAddress: '192.168.1.111',
 		name: 'Abd El Salam Workstation 11',
 		labName: 'Abd El Salam',
-		assistantUsername: 'admin',
+		assistantUsername: 'ahmed.hassan',
 		hasIssue: false,
 		specifications: [
 			{ category: 'Memory', value: 'DDR4 RAM 24GB' },
@@ -161,7 +168,7 @@ export const DEVICES_CONFIG: DeviceConfig[] = [
 		IPAddress: '192.168.1.112',
 		name: 'Abd El Salam Workstation 12',
 		labName: 'Abd El Salam',
-		assistantUsername: 'admin',
+		assistantUsername: 'fatima.ali',
 		hasIssue: false,
 		specifications: [
 			{ category: 'Memory', value: 'DDR4 RAM 8GB' },
@@ -176,7 +183,7 @@ export const DEVICES_CONFIG: DeviceConfig[] = [
 		IPAddress: '192.168.2.201',
 		name: 'Bahaa Workstation 01',
 		labName: 'Bahaa',
-		assistantUsername: 'admin',
+		assistantUsername: 'omar.mahmoud',
 		hasIssue: false,
 		specifications: [
 			{ category: 'Memory', value: 'DDR4 RAM 16GB' },
@@ -184,12 +191,13 @@ export const DEVICES_CONFIG: DeviceConfig[] = [
 			{ category: 'Processor', value: 'Intel Core i7-10700 3.6GHz' },
 			{ category: 'Graphics', value: 'NVIDIA GeForce RTX 3060 Ti 8GB' },
 		],
+		softwares: ['VS Code', 'Matlab', 'Unity'],
 	},
 	{
 		IPAddress: '192.168.2.202',
 		name: 'Bahaa Workstation 02',
 		labName: 'Bahaa',
-		assistantUsername: 'admin',
+		assistantUsername: 'sara.ibrahim',
 		hasIssue: false,
 		specifications: [
 			{ category: 'Memory', value: 'DDR4 RAM 8GB' },
@@ -197,12 +205,13 @@ export const DEVICES_CONFIG: DeviceConfig[] = [
 			{ category: 'Processor', value: 'AMD Ryzen 5 3600 3.6GHz' },
 			{ category: 'Graphics', value: 'AMD Radeon RX 5600 XT 6GB' },
 		],
+		softwares: ['VS Code', 'Visual Studio'],
 	},
 	{
 		IPAddress: '192.168.2.203',
 		name: 'Bahaa Workstation 03',
 		labName: 'Bahaa',
-		assistantUsername: 'admin',
+		assistantUsername: 'youssef.abdel',
 		hasIssue: false,
 		specifications: [
 			{ category: 'Memory', value: 'DDR4 RAM 32GB' },
@@ -210,12 +219,13 @@ export const DEVICES_CONFIG: DeviceConfig[] = [
 			{ category: 'Processor', value: 'Intel Core i9-10900K 3.7GHz' },
 			{ category: 'Graphics', value: 'NVIDIA GeForce RTX 3070 8GB' },
 		],
+		softwares: ['VS Code', 'Visual Studio', 'Matlab', 'Unity'],
 	},
 	{
 		IPAddress: '192.168.2.204',
 		name: 'Bahaa Workstation 04',
 		labName: 'Bahaa',
-		assistantUsername: 'admin',
+		assistantUsername: 'ahmed.hassan',
 		hasIssue: true,
 		specifications: [
 			{ category: 'Memory', value: 'DDR4 RAM 8GB' },
@@ -228,7 +238,7 @@ export const DEVICES_CONFIG: DeviceConfig[] = [
 		IPAddress: '192.168.2.205',
 		name: 'Bahaa Workstation 05',
 		labName: 'Bahaa',
-		assistantUsername: 'admin',
+		assistantUsername: 'fatima.ali',
 		hasIssue: false,
 		specifications: [
 			{ category: 'Memory', value: 'DDR4 RAM 16GB' },
@@ -241,7 +251,7 @@ export const DEVICES_CONFIG: DeviceConfig[] = [
 		IPAddress: '192.168.2.206',
 		name: 'Bahaa Workstation 06',
 		labName: 'Bahaa',
-		assistantUsername: 'admin',
+		assistantUsername: 'omar.mahmoud',
 		hasIssue: false,
 		specifications: [
 			{ category: 'Memory', value: 'DDR4 RAM 12GB' },
@@ -254,7 +264,7 @@ export const DEVICES_CONFIG: DeviceConfig[] = [
 		IPAddress: '192.168.2.207',
 		name: 'Bahaa Workstation 07',
 		labName: 'Bahaa',
-		assistantUsername: 'admin',
+		assistantUsername: 'sara.ibrahim',
 		hasIssue: false,
 		specifications: [
 			{ category: 'Memory', value: 'DDR4 RAM 8GB' },
@@ -267,7 +277,7 @@ export const DEVICES_CONFIG: DeviceConfig[] = [
 		IPAddress: '192.168.2.208',
 		name: 'Bahaa Workstation 08',
 		labName: 'Bahaa',
-		assistantUsername: 'admin',
+		assistantUsername: 'youssef.abdel',
 		hasIssue: false,
 		specifications: [
 			{ category: 'Memory', value: 'DDR4 RAM 64GB' },
@@ -280,7 +290,7 @@ export const DEVICES_CONFIG: DeviceConfig[] = [
 		IPAddress: '192.168.2.209',
 		name: 'Bahaa Workstation 09',
 		labName: 'Bahaa',
-		assistantUsername: 'admin',
+		assistantUsername: 'ahmed.hassan',
 		hasIssue: false,
 		specifications: [
 			{ category: 'Memory', value: 'DDR4 RAM 16GB' },
@@ -293,7 +303,7 @@ export const DEVICES_CONFIG: DeviceConfig[] = [
 		IPAddress: '192.168.2.210',
 		name: 'Bahaa Workstation 10',
 		labName: 'Bahaa',
-		assistantUsername: 'admin',
+		assistantUsername: 'fatima.ali',
 		hasIssue: false,
 		specifications: [
 			{ category: 'Memory', value: 'DDR4 RAM 8GB' },
@@ -306,7 +316,7 @@ export const DEVICES_CONFIG: DeviceConfig[] = [
 		IPAddress: '192.168.2.211',
 		name: 'Bahaa Workstation 11',
 		labName: 'Bahaa',
-		assistantUsername: 'admin',
+		assistantUsername: 'omar.mahmoud',
 		hasIssue: true,
 		specifications: [
 			{ category: 'Memory', value: 'DDR4 RAM 4GB' },
@@ -321,7 +331,7 @@ export const DEVICES_CONFIG: DeviceConfig[] = [
 		IPAddress: '192.168.3.301',
 		name: 'Basement Workstation 01',
 		labName: 'Basement',
-		assistantUsername: 'admin',
+		assistantUsername: 'sara.ibrahim',
 		hasIssue: false,
 		specifications: [
 			{ category: 'Memory', value: 'DDR4 RAM 16GB' },
@@ -329,12 +339,13 @@ export const DEVICES_CONFIG: DeviceConfig[] = [
 			{ category: 'Processor', value: 'AMD Ryzen 9 5900X 3.7GHz' },
 			{ category: 'Graphics', value: 'NVIDIA GeForce RTX 3070 Ti 8GB' },
 		],
+		softwares: ['VS Code', 'Visual Studio', 'Matlab', 'Unity'],
 	},
 	{
 		IPAddress: '192.168.3.302',
 		name: 'Basement Workstation 02',
 		labName: 'Basement',
-		assistantUsername: 'admin',
+		assistantUsername: 'youssef.abdel',
 		hasIssue: false,
 		specifications: [
 			{ category: 'Memory', value: 'DDR4 RAM 8GB' },
@@ -342,12 +353,13 @@ export const DEVICES_CONFIG: DeviceConfig[] = [
 			{ category: 'Processor', value: 'Intel Core i5-11400 2.6GHz' },
 			{ category: 'Graphics', value: 'NVIDIA GeForce GTX 1660 Ti 6GB' },
 		],
+		softwares: ['VS Code', 'Unity'],
 	},
 	{
 		IPAddress: '192.168.3.303',
 		name: 'Basement Workstation 03',
 		labName: 'Basement',
-		assistantUsername: 'admin',
+		assistantUsername: 'ahmed.hassan',
 		hasIssue: false,
 		specifications: [
 			{ category: 'Memory', value: 'DDR4 RAM 32GB' },
@@ -360,7 +372,7 @@ export const DEVICES_CONFIG: DeviceConfig[] = [
 		IPAddress: '192.168.3.304',
 		name: 'Basement Workstation 04',
 		labName: 'Basement',
-		assistantUsername: 'admin',
+		assistantUsername: 'fatima.ali',
 		hasIssue: false,
 		specifications: [
 			{ category: 'Memory', value: 'DDR4 RAM 12GB' },
@@ -373,7 +385,7 @@ export const DEVICES_CONFIG: DeviceConfig[] = [
 		IPAddress: '192.168.3.305',
 		name: 'Basement Workstation 05',
 		labName: 'Basement',
-		assistantUsername: 'admin',
+		assistantUsername: 'omar.mahmoud',
 		hasIssue: true,
 		specifications: [
 			{ category: 'Memory', value: 'DDR4 RAM 8GB' },
@@ -386,7 +398,7 @@ export const DEVICES_CONFIG: DeviceConfig[] = [
 		IPAddress: '192.168.3.306',
 		name: 'Basement Workstation 06',
 		labName: 'Basement',
-		assistantUsername: 'admin',
+		assistantUsername: 'sara.ibrahim',
 		hasIssue: false,
 		specifications: [
 			{ category: 'Memory', value: 'DDR4 RAM 24GB' },
@@ -394,12 +406,13 @@ export const DEVICES_CONFIG: DeviceConfig[] = [
 			{ category: 'Processor', value: 'AMD Ryzen 7 5800X 3.8GHz' },
 			{ category: 'Graphics', value: 'NVIDIA GeForce RTX 3080 10GB' },
 		],
+		softwares: ['VS Code', 'Visual Studio', 'Matlab', 'Unity'],
 	},
 	{
 		IPAddress: '192.168.3.307',
 		name: 'Basement Workstation 07',
 		labName: 'Basement',
-		assistantUsername: 'admin',
+		assistantUsername: 'youssef.abdel',
 		hasIssue: false,
 		specifications: [
 			{ category: 'Memory', value: 'DDR4 RAM 16GB' },
@@ -412,7 +425,7 @@ export const DEVICES_CONFIG: DeviceConfig[] = [
 		IPAddress: '192.168.3.308',
 		name: 'Basement Workstation 08',
 		labName: 'Basement',
-		assistantUsername: 'admin',
+		assistantUsername: 'ahmed.hassan',
 		hasIssue: false,
 		specifications: [
 			{ category: 'Memory', value: 'DDR4 RAM 8GB' },
@@ -425,7 +438,7 @@ export const DEVICES_CONFIG: DeviceConfig[] = [
 		IPAddress: '192.168.3.309',
 		name: 'Basement Workstation 09',
 		labName: 'Basement',
-		assistantUsername: 'admin',
+		assistantUsername: 'fatima.ali',
 		hasIssue: false,
 		specifications: [
 			{ category: 'Memory', value: 'DDR4 RAM 128GB' },
@@ -433,12 +446,13 @@ export const DEVICES_CONFIG: DeviceConfig[] = [
 			{ category: 'Processor', value: 'Intel Core i9-12900K 3.2GHz' },
 			{ category: 'Graphics', value: 'NVIDIA GeForce RTX 3090 24GB' },
 		],
+		softwares: ['VS Code', 'Visual Studio', 'Matlab', 'Unity'],
 	},
 	{
 		IPAddress: '192.168.3.310',
 		name: 'Basement Workstation 10',
 		labName: 'Basement',
-		assistantUsername: 'admin',
+		assistantUsername: 'omar.mahmoud',
 		hasIssue: false,
 		specifications: [
 			{ category: 'Memory', value: 'DDR4 RAM 16GB' },
@@ -451,7 +465,7 @@ export const DEVICES_CONFIG: DeviceConfig[] = [
 		IPAddress: '192.168.3.311',
 		name: 'Basement Workstation 11',
 		labName: 'Basement',
-		assistantUsername: 'admin',
+		assistantUsername: 'sara.ibrahim',
 		hasIssue: false,
 		specifications: [
 			{ category: 'Memory', value: 'DDR4 RAM 8GB' },
@@ -464,7 +478,7 @@ export const DEVICES_CONFIG: DeviceConfig[] = [
 		IPAddress: '192.168.3.312',
 		name: 'Basement Workstation 12',
 		labName: 'Basement',
-		assistantUsername: 'admin',
+		assistantUsername: 'youssef.abdel',
 		hasIssue: true,
 		specifications: [
 			{ category: 'Memory', value: 'DDR4 RAM 4GB' },
@@ -477,7 +491,7 @@ export const DEVICES_CONFIG: DeviceConfig[] = [
 		IPAddress: '192.168.3.313',
 		name: 'Basement Workstation 13',
 		labName: 'Basement',
-		assistantUsername: 'admin',
+		assistantUsername: 'ahmed.hassan',
 		hasIssue: false,
 		specifications: [
 			{ category: 'Memory', value: 'DDR4 RAM 48GB' },
@@ -485,5 +499,6 @@ export const DEVICES_CONFIG: DeviceConfig[] = [
 			{ category: 'Processor', value: 'AMD Ryzen 9 5950X 3.4GHz' },
 			{ category: 'Graphics', value: 'NVIDIA GeForce RTX 3090 Ti 24GB' },
 		],
+		softwares: ['VS Code', 'Visual Studio', 'Matlab', 'Unity'],
 	},
 ];

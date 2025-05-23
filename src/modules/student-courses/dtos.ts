@@ -37,6 +37,14 @@ export class StudentCourseListDto extends OmitType(StudentCourseDto, ['created_a
 
 	@ApiProperty()
 	@Expose()
+	username?: string;
+
+	@ApiProperty()
+	@Expose()
+	email?: string;
+
+	@ApiProperty()
+	@Expose()
 	courseName?: string;
 
 	@ApiProperty()
@@ -58,6 +66,38 @@ export class StudentCourseListDto extends OmitType(StudentCourseDto, ['created_a
 	@ApiProperty()
 	@Expose()
 	groupOrder?: number;
+
+	@ApiProperty()
+	@Expose()
+	groupName?: string;
+
+	@ApiProperty({ description: 'Course type based on hasLab field' })
+	@Expose()
+	courseType?: 'Practical' | 'Theory';
+
+	@ApiProperty({ description: 'Total number of enrolled students in course' })
+	@Expose()
+	numberOfStudents?: number;
+
+	@ApiProperty({ description: 'Number of students in the same group' })
+	@Expose()
+	groupStudentsCount?: number;
+
+	@ApiProperty({ description: 'Lab name where the group is assigned' })
+	@Expose()
+	labName?: string;
+
+	@ApiProperty({ description: 'Lab room/location' })
+	@Expose()
+	labRoom?: string;
+
+	@ApiProperty({ description: 'List of assigned doctor names', type: [String] })
+	@Expose()
+	assignedDoctors?: string[];
+
+	@ApiProperty({ description: 'List of required software names', type: [String] })
+	@Expose()
+	requiredSoftware?: string[];
 }
 
 export class CreateStudentCourseDto {
@@ -136,4 +176,62 @@ export class StudentCoursePaginationInput extends PaginationInput {
 	@IsUUID()
 	@Expose()
 	studentId?: UUID;
+}
+
+// NEW: DTO for student weekly schedule
+export class StudentWeeklyScheduleDto {
+	@ApiProperty({ description: 'Course ID' })
+	@Expose()
+	courseId: UUID;
+
+	@ApiProperty({ description: 'Course name' })
+	@Expose()
+	courseName: string;
+
+	@ApiProperty({ description: 'Course code like "CS101"' })
+	@Expose()
+	courseCode: string;
+
+	@ApiProperty({ description: 'Group name like "Group A"' })
+	@Expose()
+	groupName: string;
+
+	@ApiProperty({ description: 'Lab name and location' })
+	@Expose()
+	labName: string;
+
+	@ApiProperty({ description: 'Day of the week' })
+	@Expose()
+	weekDay: string;
+
+	@ApiProperty({ description: 'Start time in HH:MM format' })
+	@Expose()
+	startTime: string;
+
+	@ApiProperty({ description: 'End time in HH:MM format' })
+	@Expose()
+	endTime: string;
+
+	@ApiProperty({ description: 'Teaching assistant names', type: [String] })
+	@Expose()
+	teachingAssistants: string[];
+}
+
+// NEW: DTO for available courses
+export class AvailableCourseDto {
+	@ApiProperty({ description: 'Course ID' })
+	@Expose()
+	id: UUID;
+
+	@ApiProperty({ description: 'Course code like "CS101"' })
+	@Expose()
+	code: string;
+
+	@ApiProperty({ description: 'Course name' })
+	@Expose()
+	name: string;
+
+	@ApiProperty({ description: 'Credit hours' })
+	@Expose()
+	credits: number;
 }

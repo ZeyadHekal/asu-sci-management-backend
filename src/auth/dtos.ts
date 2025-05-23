@@ -2,6 +2,7 @@ import { ApiProperty, IntersectionType } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
 import { IsJWT, IsString, IsStrongPassword, IsUUID } from 'class-validator';
 import { UUID } from 'crypto';
+import { ExamModeStatusDto } from '../modules/events/dtos';
 
 export class RefreshRequsetDto {
 	@ApiProperty()
@@ -45,18 +46,13 @@ export class UserInfoDto {
 	@Expose()
 	isStudent: boolean;
 
-	@ApiProperty({ required: false, description: 'Exam mode status for students' })
+	@ApiProperty({
+		required: false,
+		description: 'Exam mode status for students',
+		type: ExamModeStatusDto
+	})
 	@Expose()
-	examModeStatus?: {
-		isInExamMode: boolean;
-		examStartsIn?: number;
-		examSchedules: {
-			eventScheduleId: UUID;
-			eventName: string;
-			dateTime: Date;
-			status: string;
-		}[];
-	};
+	examModeStatus?: ExamModeStatusDto;
 }
 
 export class LoginSuccessDto extends IntersectionType(AuthJwtDto, PrivilegRefreshDto) {

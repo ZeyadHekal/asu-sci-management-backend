@@ -5,11 +5,14 @@ import { Allow, IsNumber } from 'class-validator';
 export class PaginationInput {
 	@ApiProperty({ default: 10, required: false })
 	@IsNumber()
+	@Transform(({ value }) => parseInt(value, 10))
 	@Expose()
 	@Allow()
 	limit: number = 10;
 
 	@ApiProperty({ default: 0, required: false })
+	@IsNumber()
+	@Transform(({ value }) => parseInt(value, 10))
 	@Allow()
 	@Expose()
 	page: number = 0;

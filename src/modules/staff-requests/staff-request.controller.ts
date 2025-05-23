@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Param, Query, Put, UploadedFile } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { StaffRequestService } from './staff-request.service';
-import { CreateStaffRequestDto, StaffRequestDto, StaffRequestPagedDto } from './dtos/staff-request.dto';
+import { CreateStaffRequestDto, StaffRequestDto, StaffRequestPagedDto, ApproveStaffRequestDto, RejectStaffRequestDto } from './dtos/staff-request.dto';
 import { PaginationInput } from 'src/base/pagination.input';
 import { UUID } from 'crypto';
 import { PrivilegeCode } from 'src/db-seeder/data/privileges';
@@ -65,8 +65,8 @@ export class StaffRequestController {
 	@ApiResponse({ status: 401, description: 'Unauthorized' })
 	@ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
 	@ApiResponse({ status: 404, description: 'Not Found - Staff request does not exist' })
-	async approve(@Param('id') id: UUID, @CurrentUser() user: User, @Body('userTypeId') userTypeId: UUID): Promise<StaffRequestDto> {
-		return this.staffRequestService.approve(id, user.id, userTypeId);
+	async approve(@Param('id') id: UUID, @CurrentUser() user: User, @Body() approveDto: ApproveStaffRequestDto): Promise<StaffRequestDto> {
+		return this.staffRequestService.approve(id, user.id, approveDto);
 	}
 
 	@Put(':id/reject')
@@ -77,7 +77,7 @@ export class StaffRequestController {
 	@ApiResponse({ status: 401, description: 'Unauthorized' })
 	@ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
 	@ApiResponse({ status: 404, description: 'Not Found - Staff request does not exist' })
-	async reject(@Param('id') id: UUID, @Body('reason') reason: string): Promise<StaffRequestDto> {
-		return this.staffRequestService.reject(id, reason);
+	async reject(@Param('id') id: UUID, @Body() rejectDto: RejectStaffRequestDto): Promise<StaffRequestDto> {
+		return this.staffRequestService.reject(id, rejectDto.reason);
 	}
 }

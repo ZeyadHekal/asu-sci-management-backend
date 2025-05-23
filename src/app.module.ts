@@ -8,6 +8,8 @@ import { AuthModule } from './auth/module';
 import { CourseModule } from './modules/courses/module';
 import { EventScheduleModule } from './modules/event-schedules/module';
 import { EventModule } from './modules/events/module';
+import { EventGroupModule } from './modules/event-groups/module';
+import { ExamModelModule } from './modules/exam-models/module';
 import { LabModule } from './modules/labs/module';
 import { DeviceModule } from './modules/devices/module';
 import { LabSessionModule } from './modules/lab-session/module';
@@ -20,6 +22,10 @@ import { StaffRequestModule } from './modules/staff-requests/staff-request.modul
 import { StudentCourseModule } from './modules/student-courses/module';
 import { CourseGroupModule } from './modules/course-groups/module';
 import { DeviceReportModule } from './modules/device-reports/module';
+import { DeviceLoginHistoryModule } from './modules/device-login-history/module';
+import { CourseAccessModule } from './modules/course-access/module';
+import { MaterialModule } from './modules/materials/module';
+import { StudentFilesModule } from './modules/students/student-files.module';
 
 @Module({
 	imports: [
@@ -38,16 +44,22 @@ import { DeviceReportModule } from './modules/device-reports/module';
 		// Project modules
 		LabModule,
 		EventModule,
+		EventGroupModule,
+		ExamModelModule,
 		CourseModule,
 		CourseGroupModule,
 		EventScheduleModule,
 		SoftwareModule,
 		DeviceModule,
 		DeviceReportModule,
+		DeviceLoginHistoryModule,
 		LabSessionModule,
 		FileModule,
 		StaffRequestModule,
 		StudentCourseModule,
+		CourseAccessModule,
+		MaterialModule,
+		StudentFilesModule,
 	],
 })
 export class AppModule {}

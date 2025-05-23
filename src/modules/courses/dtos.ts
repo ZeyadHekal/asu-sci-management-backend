@@ -1,6 +1,6 @@
 import { ApiProperty, IntersectionType, OmitType, PartialType } from '@nestjs/swagger';
 import { Expose, Transform } from 'class-transformer';
-import { IS_LENGTH, IsBoolean, IsNumber, IsString, IsStrongPassword, IsUUID, Length, MinLength } from 'class-validator';
+import { IsArray, IsBoolean, IsNumber, IsOptional, IsString, IsUUID, Length, Max, Min } from 'class-validator';
 import { UUID } from 'crypto';
 import { IPaginationOutput } from './imports';
 import { Course } from 'src/database/courses/course.entity';
@@ -27,7 +27,8 @@ export class CreateCourseDto {
 	@ApiProperty()
 	@Expose()
 	@IsNumber()
-	@Length(3)
+	@Min(100)
+	@Max(999)
 	courseNumber: number;
 
 	@ApiProperty()
@@ -44,11 +45,25 @@ export class CreateCourseDto {
 	@Expose()
 	@IsNumber()
 	attendanceMarks: number;
+
+	@ApiProperty({ type: [String], required: false, description: 'Array of doctor IDs to assign to this course' })
+	@IsOptional()
+	@IsArray()
+	@IsUUID(4, { each: true })
+	@Expose()
+	doctorIds?: UUID[];
+
+	@ApiProperty({ type: [String], required: false, description: 'Array of software IDs required for this course' })
+	@IsOptional()
+	@IsArray()
+	@IsUUID(4, { each: true })
+	@Expose()
+	softwareIds?: UUID[];
 }
 
 export class UpdateCourseDto extends PartialType(CreateCourseDto) {}
 
-export class CourseDto extends OmitType(CreateCourseDto, []) {
+export class CourseDto extends OmitType(CreateCourseDto, ['doctorIds', 'softwareIds']) {
 	@ApiProperty()
 	@Expose()
 	id: UUID;
@@ -60,6 +75,32 @@ export class CourseDto extends OmitType(CreateCourseDto, []) {
 	@ApiProperty()
 	@Expose()
 	updated_at: Date;
+}
+
+export class CourseDetailDto extends CourseDto {
+	@ApiProperty({ description: 'Course code (subjectCode + courseNumber)' })
+	@Expose()
+	courseCode: string;
+
+	@ApiProperty({ description: 'Course type based on hasLab field' })
+	@Expose()
+	courseType: 'Practical' | 'Theory';
+
+	@ApiProperty({ description: 'List of assigned doctor names', type: [String] })
+	@Expose()
+	assignedDoctors: string[];
+
+	@ApiProperty({ description: 'List of required software names', type: [String] })
+	@Expose()
+	requiredSoftware: string[];
+
+	@ApiProperty({ description: 'Total number of enrolled students' })
+	@Expose()
+	numberOfStudents: number;
+
+	@ApiProperty({ description: 'Indicates if course has default group created' })
+	@Expose()
+	hasDefaultGroup: boolean;
 }
 
 export class CourseListDto extends OmitType(CourseDto, ['created_at', 'updated_at']) {
@@ -74,6 +115,10 @@ export class CourseListDto extends OmitType(CourseDto, ['created_at', 'updated_a
 	@ApiProperty({ description: 'List of assigned doctor names', type: [String] })
 	@Expose()
 	assignedDoctors: string[];
+
+	@ApiProperty({ description: 'List of required software names', type: [String] })
+	@Expose()
+	requiredSoftware: string[];
 
 	@ApiProperty({ description: 'Total number of enrolled students' })
 	@Expose()
@@ -96,14 +141,20 @@ export class CoursePagedDto implements IPaginationOutput<CourseListDto> {
 
 export class CoursePaginationInput extends PaginationInput {
 	@ApiProperty({ required: false, description: 'Filter by course type' })
+	@IsOptional()
+	@IsString()
 	@Expose()
 	courseType?: 'Practical' | 'Theory';
 
 	@ApiProperty({ required: false, description: 'Filter by subject code' })
+	@IsOptional()
+	@IsString()
 	@Expose()
 	subjectCode?: string;
 
 	@ApiProperty({ required: false, description: 'Search by course name or code' })
+	@IsOptional()
+	@IsString()
 	@Expose()
 	search?: string;
 }

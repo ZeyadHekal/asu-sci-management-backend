@@ -36,6 +36,6 @@ export class Student extends OmitType(ManagementEntity, ['id']) {
 	updated_at: Date;
 
 	@OneToOne(() => User, { nullable: false, lazy: true, onDelete: 'RESTRICT', onUpdate: 'CASCADE' })
-	@JoinColumn({ name: 'user_id' })
+	@JoinColumn({ name: 'id' })
 	user: Promise<User>;
 }

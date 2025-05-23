@@ -6,10 +6,13 @@ import { CreateStaffRequestDto, StaffRequestDto, UpdateStaffRequestDto, StaffReq
 import { PaginationInput } from 'src/base/pagination.input';
 import { UUID } from 'crypto';
 import { UserType } from 'src/database/users/user-type.entity';
+import { User } from 'src/database/users/user.entity';
 import { transformToInstance } from 'src/base/transformToInstance';
 import { UserService } from 'src/users/service';
 import { CreateUserDto } from 'src/users/dtos';
 import { FileService } from 'src/modules/files/file.service';
+import * as bcrypt from 'bcrypt';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class StaffRequestService {
@@ -18,8 +21,11 @@ export class StaffRequestService {
 		private readonly staffRequestRepository: Repository<StaffRequest>,
 		@InjectRepository(UserType)
 		private readonly userTypeRepository: Repository<UserType>,
+		@InjectRepository(User)
+		private readonly userRepository: Repository<User>,
 		private readonly userService: UserService,
 		private readonly fileService: FileService,
+		private readonly configService: ConfigService,
 	) {}
 
 	private async addIdPhotoUrl(dto: StaffRequestDto): Promise<StaffRequestDto> {
@@ -48,12 +54,16 @@ export class StaffRequestService {
 			throw new BadRequestException('Passwords do not match');
 		}
 
+		// Hash the password before storing
+		const hashedPassword = await bcrypt.hash(createDto.password, parseInt(this.configService.get<string>('PASSWORD_SALT', '10')));
+
 		// Upload ID photo
 		const uploadedPhoto = await this.fileService.uploadFile(idPhoto, { prefix: 'staff-requests' });
 
-		// Create staff request
+		// Create staff request (no username uniqueness check here to prevent bruteforcing)
 		const staffRequest = this.staffRequestRepository.create({
 			...createDto,
+			password: hashedPassword, // Store hashed password
 			status: StaffRequestStatus.PENDING,
 			idPhoto: uploadedPhoto.id.toString(),
 		});
@@ -73,7 +83,14 @@ export class StaffRequestService {
 			order: { [input.sortBy]: input.sortOrder },
 		});
 
-		const items = await this.addIdPhotoUrls(requests.map((request) => transformToInstance(StaffRequestDto, request)));
+		const items = await this.addIdPhotoUrls(requests.map((request) => {
+			const requestWithDates = {
+				...request,
+				createdAt: request.created_at,
+				updatedAt: request.updated_at,
+			};
+			return transformToInstance(StaffRequestDto, requestWithDates);
+		}));
 
 		return {
 			items,
@@ -91,8 +108,14 @@ export class StaffRequestService {
 			take,
 			order: { [input.sortBy]: input.sortOrder },
 		});
-
-		const items = await this.addIdPhotoUrls(requests.map((request) => transformToInstance(StaffRequestDto, request)));
+		const items = await this.addIdPhotoUrls(requests.map((request) => {
+			const requestWithDates = {
+				...request,
+				createdAt: request.created_at,
+				updatedAt: request.updated_at,
+			};
+			return transformToInstance(StaffRequestDto, requestWithDates);
+		}));
 
 		return {
 			items,
@@ -110,7 +133,7 @@ export class StaffRequestService {
 		return this.addIdPhotoUrl(dto);
 	}
 
-	async approve(id: UUID, approvedById: UUID, userTypeId: UUID): Promise<StaffRequestDto> {
+	async approve(id: UUID, approvedById: UUID, approveDto: { name: string; username: string; title: string; department: string; userTypeId: UUID }): Promise<StaffRequestDto> {
 		const request = await this.staffRequestRepository.findOneBy({ id });
 		if (!request) {
 			throw new NotFoundException('Staff request not found');
@@ -121,26 +144,48 @@ export class StaffRequestService {
 		}
 
 		// Verify user type exists
-		const userType = await this.userTypeRepository.findOneBy({ id: userTypeId });
+		const userType = await this.userTypeRepository.findOneBy({ id: approveDto.userTypeId });
 		if (!userType) {
 			throw new BadRequestException('Invalid user type');
 		}
 
-		// Create the user first
+		// Check username uniqueness during approval (not during creation)
+		const existingUser = await this.userRepository.findOneBy({ username: approveDto.username });
+		if (existingUser) {
+			throw new BadRequestException('Username is already taken. Please reject this request and ask the user to submit a new request with a different username.');
+		}
+
+		// Create the user with the edited data but using the original password
 		const createUserDto: CreateUserDto = {
-			name: request.name,
-			username: request.email, // Using email as username
-			password: request.password,
-			userTypeId: userTypeId,
+			name: approveDto.name,
+			username: approveDto.username,
+			password: request.password, // Use the original hashed password from the request
+			userTypeId: approveDto.userTypeId,
 		};
 
-		await this.userService.create(createUserDto);
+		// Since the password is already hashed, we need to bypass the hashing in UserService
+		// We'll call the repository directly to avoid double-hashing
+		const user = await this.userRepository.create({
+			name: approveDto.name,
+			username: approveDto.username,
+			password: request.password, // Already hashed
+			userTypeId: approveDto.userTypeId,
+			title: approveDto.title,
+			department: approveDto.department,
+		});
 
-		// Update request status
+		await this.userRepository.save(user);
+
+		// Update request with the edited data
+		request.name = approveDto.name;
+		request.username = approveDto.username;
+		request.title = approveDto.title;
+		request.department = approveDto.department;
+		// Don't update password - keep the original hashed one
 		request.status = StaffRequestStatus.APPROVED;
 		request.approvedById = approvedById;
 		request.approvedAt = new Date();
-		request.userTypeId = userTypeId;
+		request.userTypeId = approveDto.userTypeId;
 
 		const savedRequest = await this.staffRequestRepository.save(request);
 		const dto = transformToInstance(StaffRequestDto, savedRequest);

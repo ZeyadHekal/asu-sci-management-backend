@@ -77,34 +77,6 @@ export class DoctorCourse extends OmitType(ManagementEntity, ['id']) {
 	doctor: Promise<User>;
 	__doctor__?: User;
 }
-
-@Entity('student_courses')
-export class StudentCourse extends OmitType(ManagementEntity, ['id']) {
-	@PrimaryColumn({ type: 'string' })
-	student_id: UUID;
-
-	@PrimaryColumn({ type: 'string' })
-	course_id: UUID;
-
-	@CreateDateColumn()
-	@Expose()
-	created_at: Date;
-
-	@UpdateDateColumn()
-	@Expose()
-	updated_at: Date;
-
-	@ManyToOne(() => Course, { lazy: true })
-	@JoinColumn({ name: 'course_id' })
-	course: Promise<Course>;
-	__course__?: Course;
-
-	@ManyToOne(() => User, (ut) => ut.userPrivileges, { lazy: true })
-	@JoinColumn({ name: 'student_id' })
-	student: Promise<User>;
-	__student__?: User;
-}
-
 @Entity('software_courses')
 export class SoftwareCourse extends OmitType(ManagementEntity, ['id']) {
 	@PrimaryColumn({ type: 'string' })

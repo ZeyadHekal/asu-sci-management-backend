@@ -20,6 +20,7 @@ export {
 	StudentCoursePaginationInput as PaginationInput,
 	EnrollStudentDto,
 	UpdateEnrollmentDto,
+	AvailableCourseDto,
 } from './dtos';
 
 // StudentCourse = Entity, remove the following line and import it from the database
@@ -47,3 +48,4 @@ export { PrivilegeCode } from 'src/db-seeder/data/privileges';
 export { RequirePrivileges } from 'src/privileges/guard/decorator';
 export { BaseController } from 'src/base/base.controller';
 export { ApiResponse, ApiOperation, ApiTags, ApiParam } from '@nestjs/swagger';
+export { User } from 'src/database/users/user.entity';

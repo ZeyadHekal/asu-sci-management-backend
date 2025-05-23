@@ -7,16 +7,18 @@ services:
     container_name: asu-management-mysql
     restart: always
     ports:
-      - "${DB_PORT:-3306}:3306"
+      - "${DB_EXTERNAL_PORT:-3306}:3306"
     environment:
-      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD:-root}
       - MYSQL_DATABASE=${DB_NAME:-management_system}
-      - MYSQL_USER=${DB_USERNAME:-root}
-      - MYSQL_PASSWORD=${DB_PASSWORD:-root}
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD:-root}
     volumes:
       - asu_management_mysql_data:/var/lib/mysql
       - ./mysql-init:/docker-entrypoint-initdb.d
     command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_PASSWORD:-root}"]
+      timeout: 20s
+      retries: 10
 
   # NestJS Backend Service
   api:
@@ -34,23 +36,41 @@ services:
       - mysql
       - minio
 
+  # PhpMyAdmin client
+  phpmyadmin:
+    image: arm64v8/phpmyadmin
+    #image: phpmyadmin/phpmyadmin
+    container_name: asu-management-phpmyadmin
+    restart: always
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      VIRTUAL_HOST: asu-phpmyadmin.zeyadhekal.tech
+      VIRTUAL_PORT: 80
+      PMA_ABSOLUTE_URI: https://asu-phpmyadmin.zeyadhekal.tech/
+    ports:
+      - "${DB_PHPMYADMIN_PORT:-4004}:80"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
   # Database Backup Service
   db-backup:
-    image: arm64v8/phpmyadmin
-    # image: phpmyadmin/phpmyadmin
+    build:
+      context: .
+      dockerfile: Dockerfile.db_backup
     container_name: asu-management-db-backup
-    restart: always
-    ports:
-      - "${PHPMYADMIN_PORT:-8080}:80"
-    volumes:
-      - asu_management_db_backups:/backup
+    restart: unless-stopped
     environment:
-      - PMA_HOST=${DB_HOST:-mysql}
-      - PMA_USER=${DB_USERNAME:-root}
-      - PMA_PASSWORD=${DB_PASSWORD:-root}
       - MYSQL_ROOT_PASSWORD=${DB_PASSWORD:-root}
+      - MYSQL_DATABASE=${DB_NAME:-management_system}
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+    volumes:
+      - asu_management_db_backups:/backups
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
 
   # MinIO Service
   minio:
@@ -58,8 +78,8 @@ services:
     container_name: asu-management-minio
     restart: always
     ports:
-      - "${MINIO_PORT:-9000}:9000"  # API port
-      - "9001:9001"  # Console port
+      - "${MINIO_INTERNAL_PORT:-9000}:9000"
+      - "${MINIO_DASHBOARD_PORT:-9001}:9001"
     environment:
       - MINIO_ROOT_USER=${MINIO_ACCESS_KEY:-minioadmin}
       - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY:-minioadmin}

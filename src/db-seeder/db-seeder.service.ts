@@ -8,6 +8,8 @@ import { ProfessorSeeder } from './seeders/professors';
 import { LabSeeder } from './seeders/labs';
 import { DeviceSeeder } from './seeders/devices';
 import { StudentSeeder } from './seeders/students';
+import { AssistantSeeder } from './seeders/assistants';
+import { SoftwareSeeder } from './seeders/software';
 
 @Injectable()
 export class DatabaseSeeder implements OnModuleInit {
@@ -18,6 +20,8 @@ export class DatabaseSeeder implements OnModuleInit {
 		private readonly courseSeeder: CourseSeeder,
 		private readonly professorSeeder: ProfessorSeeder,
 		private readonly labSeeder: LabSeeder,
+		private readonly softwareSeeder: SoftwareSeeder,
+		private readonly assistantSeeder: AssistantSeeder,
 		private readonly deviceSeeder: DeviceSeeder,
 		private readonly studentSeeder: StudentSeeder,
 	) {}
@@ -26,9 +30,11 @@ export class DatabaseSeeder implements OnModuleInit {
 		await this.privilegeSeeder.seed();
 		await this.userTypeSeeder.seed();
 		await this.userSeeder.seed();
-		await this.courseSeeder.seed();
 		await this.professorSeeder.seed();
+		await this.courseSeeder.seed();
 		await this.labSeeder.seed();
+		await this.softwareSeeder.seed();
+		await this.assistantSeeder.seed();
 		await this.deviceSeeder.seed();
 		await this.studentSeeder.seed();
 	}

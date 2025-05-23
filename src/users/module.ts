@@ -9,12 +9,17 @@ import { FileModule } from '../modules/files/module';
 import { UserTypeController } from './user-types/controller';
 import { UserTypeService } from './user-types/service';
 import { DoctorCourse, Course } from 'src/database/courses/course.entity';
-import { UserPrivilege, Privilege } from 'src/database/privileges/privilege.entity';
+import { UserPrivilege, Privilege, UserTypePrivilege } from 'src/database/privileges/privilege.entity';
+import { Student } from 'src/database/students/student.entity';
 
 @Module({
-	imports: [ConfigModule, TypeOrmModule.forFeature([User, UserType, DoctorCourse, Course, UserPrivilege, Privilege]), FileModule],
+	imports: [
+		ConfigModule,
+		TypeOrmModule.forFeature([User, UserType, DoctorCourse, Course, UserPrivilege, Privilege, UserTypePrivilege, Student]),
+		FileModule
+	],
 	controllers: [UserTypeController, UserController],
 	providers: [UserService, UserTypeService],
 	exports: [UserService, UserTypeService],
 })
-export class UserModule {}
+export class UserModule { }

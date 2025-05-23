@@ -30,12 +30,25 @@ export class UserTypeController extends BaseController<UserType, CreateUserTypeD
 
 	@Get()
 	@ApiOperation({ summary: 'Get all user types', description: 'Retrieve all user types' })
-	@RequirePrivileges({ or: [PrivilegeCode.MANAGE_SYSTEM, PrivilegeCode.MANAGE_SYSTEM] })
+	@RequirePrivileges({ or: [PrivilegeCode.MANAGE_SYSTEM] })
 	@ApiResponse({ type: UserTypeDto, isArray: true, status: 200, description: 'User types retrieved successfully' })
 	@ApiResponse({ status: 401, description: 'Unauthorized' })
 	@ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
 	findAll() {
 		return this.getAll();
+	}
+
+	@Get('for-staff-assignment')
+	@ApiOperation({
+		summary: 'Get user types for staff assignment',
+		description: 'Retrieve user types suitable for staff assignment (excludes Student type)'
+	})
+	@RequirePrivileges({ or: [PrivilegeCode.MANAGE_SYSTEM] })
+	@ApiResponse({ type: UserTypeDto, isArray: true, status: 200, description: 'User types for staff assignment retrieved successfully' })
+	@ApiResponse({ status: 401, description: 'Unauthorized' })
+	@ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
+	findAllForStaffAssignment() {
+		return this.userTypeService.findAllForStaffAssignment();
 	}
 
 	@Get('with-privileges')

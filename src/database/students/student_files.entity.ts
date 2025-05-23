@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, Column, PrimaryColumn, ManyToOne, JoinColumn, DeleteDateColumn } from 'typeorm';
 import { Expose } from 'class-transformer';
 import { UUID } from 'crypto';
 import { Student } from './student.entity';
@@ -6,6 +6,7 @@ import { Course } from '../courses/course.entity';
 import { ManagementEntity } from 'src/base/base.entity';
 import { Material } from '../materials/material.entity';
 import { Event } from '../events/event.entity';
+import { File } from '../../modules/files/entities/file.entity';
 
 @Entity('students_files')
 export class StudentsFiles extends ManagementEntity {
@@ -17,21 +18,24 @@ export class StudentsFiles extends ManagementEntity {
 	@Expose()
 	courseId: UUID;
 
-	@Column({ name: 'event_id' })
+	@Column({ name: 'event_id', nullable: true })
 	@Expose()
 	eventId: UUID;
 
-	@Column({ name: 'material_id' })
+	@Column({ name: 'material_id', nullable: true })
 	@Expose()
 	materialId: UUID;
 
-	@Column()
+	@Column({ name: 'file_id' })
 	@Expose()
-	files: string;
+	fileId: number;
 
 	@Column()
 	@Expose()
 	date: Date;
+
+	@DeleteDateColumn({ name: 'deleted_at' })
+	deletedAt?: Date;
 
 	@ManyToOne(() => Student, { nullable: false, lazy: true, onDelete: 'RESTRICT', onUpdate: 'CASCADE' })
 	@JoinColumn({ name: 'student_id' })
@@ -48,4 +52,8 @@ export class StudentsFiles extends ManagementEntity {
 	@ManyToOne(() => Event, { nullable: false, lazy: true, onDelete: 'RESTRICT', onUpdate: 'CASCADE' })
 	@JoinColumn({ name: 'event_id' })
 	event: Promise<Event>;
+
+	@ManyToOne(() => File, { nullable: false, lazy: true, onDelete: 'RESTRICT', onUpdate: 'CASCADE' })
+	@JoinColumn({ name: 'file_id' })
+	file: Promise<File>;
 }

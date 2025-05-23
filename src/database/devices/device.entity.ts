@@ -22,6 +22,10 @@ export class Device extends ManagementEntity {
 	@Expose()
 	hasIssue: boolean;
 
+	@Column({ default: 'available', type: 'varchar', length: 50 })
+	@Expose()
+	status: string; // 'available' or 'not available'
+
 	@Column({ nullable: false, name: 'lab_id' })
 	@Expose()
 	labId: UUID;
@@ -44,6 +48,7 @@ export class Device extends ManagementEntity {
 	@OneToMany(() => DeviceSpecification, (spec) => spec.device, { lazy: true })
 	specifications: Promise<DeviceSpecification[]>;
 
+	@OneToMany(() => DeviceSoftware, (deviceSoftware) => deviceSoftware.device, { lazy: true })
 	deviceSoftwares: Promise<DeviceSoftware[]>;
 	__deviceSoftwares__?: DeviceSoftware[];
 }

@@ -1,0 +1,40 @@
+FROM debian:bullseye-slim
+
+# Install mysql-client and cron
+RUN apt-get update && \
+    apt-get install -y \
+    default-mysql-client \
+    cron \
+    gzip \
+    findutils && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create scripts directory
+RUN mkdir -p /scripts
+
+# Copy backup script
+COPY backup-scripts/backup.sh /scripts/backup.sh
+
+# Make script executable
+RUN chmod +x /scripts/backup.sh
+
+# Create cron job file
+RUN echo '0 0 * * * /scripts/backup.sh >> /var/log/backup.log 2>&1' > /etc/cron.d/backup-cron
+
+# Give execution rights on the cron job
+RUN chmod 0644 /etc/cron.d/backup-cron
+
+# Apply cron job
+RUN crontab /etc/cron.d/backup-cron
+
+# Create the log file to be able to run tail
+RUN touch /var/log/backup.log
+
+# Create backup directory
+RUN mkdir -p /backups
+
+# Start script
+COPY backup-scripts/start.sh /start.sh
+RUN chmod +x /start.sh
+
+CMD ["/start.sh"] 

@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import * as XLSX from 'xlsx';
 import * as imports from './imports';
 import { Device } from 'src/database/devices/device.entity';
 import { User } from 'src/database/users/user.entity';
@@ -18,27 +19,67 @@ export class MaintenanceHistoryService {
         @InjectRepository(DeviceReport) private readonly reportRepository: Repository<DeviceReport>,
     ) { }
 
+    // Helper method to update related report status
+    private async updateRelatedReportStatus(maintenanceRecord: imports.Entity): Promise<void> {
+        if (maintenanceRecord.relatedReportId) {
+            const report = await this.reportRepository.findOneBy({ id: maintenanceRecord.relatedReportId });
+            if (report) {
+                let shouldUpdate = false;
+
+                // Update report status based on maintenance status
+                switch (maintenanceRecord.status) {
+                    case 'COMPLETED':
+                        if (report.status !== 'RESOLVED') {
+                            report.status = 'RESOLVED';
+                            // Update fixMessage with the latest resolution notes
+                            if (maintenanceRecord.resolutionNotes) {
+                                report.fixMessage = maintenanceRecord.resolutionNotes;
+                            }
+                            shouldUpdate = true;
+                        }
+                        break;
+                    case 'IN_PROGRESS':
+                        if (report.status === 'PENDING_REVIEW') {
+                            report.status = 'IN_PROGRESS';
+                            shouldUpdate = true;
+                        }
+                        break;
+                    case 'FAILED':
+                    case 'CANCELLED':
+                        // Don't automatically change status for failed/cancelled maintenance
+                        break;
+                }
+
+                if (shouldUpdate) {
+                    await this.reportRepository.save(report);
+                }
+            }
+        }
+    }
+
     async create(createDto: imports.CreateDto): Promise<imports.GetDto> {
         const maintenance = this.repository.create(createDto);
         const savedMaintenance = await this.repository.save(maintenance);
+
+        // Update related report status if applicable
+        await this.updateRelatedReportStatus(savedMaintenance);
+
         return this.getById((savedMaintenance as any).id);
     }
 
     async findAll(): Promise<imports.GetListDto[]> {
         const maintenances = await this.repository.find({
-            relations: ['device', 'technician', 'relatedReport'],
+            relations: ['device', 'relatedReport'],
         });
 
         return Promise.all(
             maintenances.map(async (maintenance) => {
                 const device = await maintenance.device;
-                const technician = await maintenance.technician;
                 const relatedReport = maintenance.relatedReportId ? await maintenance.relatedReport : null;
 
                 return transformToInstance(imports.GetListDto, {
                     ...maintenance,
                     deviceName: device?.name,
-                    technicianName: technician?.name,
                     relatedReportDescription: relatedReport?.description,
                 });
             }),
@@ -46,20 +87,36 @@ export class MaintenanceHistoryService {
     }
 
     async getPaginated(input: MaintenanceHistoryPaginationInput): Promise<imports.IPaginationOutput<imports.GetListDto>> {
-        const { page, limit, sortBy, sortOrder, deviceId, technicianId, status, maintenanceType, relatedReportId } = input;
+        const { page, limit, sortBy, sortOrder, deviceId, labId, status, maintenanceType, relatedReportId, search, dateFrom, dateTo } = input;
         const skip = page * limit;
 
         const query = this.repository
             .createQueryBuilder('maintenance')
             .leftJoinAndSelect('maintenance.device', 'device')
-            .leftJoinAndSelect('maintenance.technician', 'technician')
             .leftJoinAndSelect('maintenance.relatedReport', 'relatedReport');
 
         if (deviceId) query.andWhere('maintenance.deviceId = :deviceId', { deviceId });
-        if (technicianId) query.andWhere('maintenance.technicianId = :technicianId', { technicianId });
+        if (labId) query.andWhere('device.labId = :labId', { labId });
         if (status) query.andWhere('maintenance.status = :status', { status });
         if (maintenanceType) query.andWhere('maintenance.maintenanceType = :maintenanceType', { maintenanceType });
         if (relatedReportId) query.andWhere('maintenance.relatedReportId = :relatedReportId', { relatedReportId });
+
+        // Apply search across device names, descriptions, and personnel names
+        if (search) {
+            query.andWhere(
+                '(LOWER(device.name) LIKE LOWER(:search) OR LOWER(maintenance.description) LIKE LOWER(:search) OR LOWER(maintenance.resolutionNotes) LIKE LOWER(:search))',
+                { search: `%${search}%` }
+            );
+        }
+
+        // Apply date range filter
+        if (dateFrom) {
+            query.andWhere('DATE(maintenance.created_at) >= :dateFrom', { dateFrom });
+        }
+
+        if (dateTo) {
+            query.andWhere('DATE(maintenance.created_at) <= :dateTo', { dateTo });
+        }
 
         query.skip(skip).take(limit);
 
@@ -74,13 +131,11 @@ export class MaintenanceHistoryService {
         const items = await Promise.all(
             maintenances.map(async (maintenance) => {
                 const device = await maintenance.device;
-                const technician = await maintenance.technician;
                 const relatedReport = maintenance.relatedReportId ? await maintenance.relatedReport : null;
 
                 return transformToInstance(imports.GetListDto, {
                     ...maintenance,
                     deviceName: device?.name,
-                    technicianName: technician?.name,
                     relatedReportDescription: relatedReport?.description,
                 });
             }),
@@ -89,10 +144,53 @@ export class MaintenanceHistoryService {
         return { items, total };
     }
 
+    async exportMaintenanceXlsx(input: MaintenanceHistoryPaginationInput, res: any): Promise<void> {
+        // Get all records without pagination for export
+        const exportInput = { ...input, page: 0, limit: 999999 };
+        const { items } = await this.getPaginated(exportInput);
+
+        // Create data for Excel export
+        const data = items.map((maintenance: any) => ({
+            'Date': new Date(maintenance.created_at).toLocaleString(),
+            'Device': maintenance.deviceName || `Device ${maintenance.deviceId}`,
+            'Type': maintenance.maintenanceType,
+            'Status': maintenance.status,
+            'Description': maintenance.description,
+            'Involved Personnel': maintenance.involvedPersonnel?.join(', ') || 'No personnel listed',
+            'Resolution Notes': maintenance.resolutionNotes || 'N/A'
+        }));
+
+        // Create workbook and worksheet
+        const workbook = XLSX.utils.book_new();
+        const worksheet = XLSX.utils.json_to_sheet(data);
+
+        // Auto-size columns
+        const maxWidth = 50;
+        const colWidths = Object.keys(data[0] || {}).map(key => {
+            const maxLength = Math.max(
+                key.length,
+                ...data.map(row => String(row[key as keyof typeof row] || '').length)
+            );
+            return { wch: Math.min(maxLength + 2, maxWidth) };
+        });
+        worksheet['!cols'] = colWidths;
+
+        // Add worksheet to workbook
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Maintenance History');
+
+        // Generate Excel buffer
+        const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+        // Set response headers for Excel download
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename="maintenance-history.xlsx"');
+        res.send(excelBuffer);
+    }
+
     async getById(id: UUID): Promise<imports.GetDto> {
         const maintenance = await this.repository.findOne({
             where: { id },
-            relations: ['device', 'technician', 'relatedReport'],
+            relations: ['device', 'relatedReport'],
         });
 
         if (!maintenance) {
@@ -100,13 +198,11 @@ export class MaintenanceHistoryService {
         }
 
         const device = await maintenance.device;
-        const technician = await maintenance.technician;
         const relatedReport = maintenance.relatedReportId ? await maintenance.relatedReport : null;
 
         return transformToInstance(imports.GetDto, {
             ...maintenance,
             deviceName: device?.name,
-            technicianName: technician?.name,
             relatedReportDescription: relatedReport?.description,
         });
     }
@@ -118,15 +214,22 @@ export class MaintenanceHistoryService {
         }
 
         Object.assign(maintenance, updateDto);
-        await this.repository.save(maintenance);
+        const updatedMaintenance = await this.repository.save(maintenance);
+
+        // Update related report status if applicable
+        await this.updateRelatedReportStatus(updatedMaintenance);
 
         return this.getById(id);
     }
 
-    async delete(ids: string): Promise<{ deletedCount: number }> {
-        const idsArray = ids.split(',').map((id) => id.trim());
-        const result = await this.repository.delete(idsArray);
-        return { deletedCount: result.affected || 0 };
+    async delete(id: UUID): Promise<{ affected: number }> {
+        const maintenance = await this.repository.findOneBy({ id });
+        if (!maintenance) {
+            throw new NotFoundException('Maintenance history not found');
+        }
+
+        const result = await this.repository.delete(id);
+        return { affected: result.affected || 0 };
     }
 
     // Get maintenance history for a specific device

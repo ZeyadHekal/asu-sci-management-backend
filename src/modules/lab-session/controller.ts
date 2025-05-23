@@ -20,6 +20,13 @@ import {
 	RequirePrivileges,
 	PrivilegeCode,
 } from './imports';
+import {
+	StartLabSessionDto,
+	ActiveSessionDetailsDto,
+	TakeAttendanceDto,
+	AddStudentToSessionDto,
+	AwardExtraPointsDto
+} from './dtos';
 
 @ApiTags('lab-sessions')
 	@RequirePrivileges({ and: [PrivilegeCode.MANAGE_SYSTEM] })
@@ -55,6 +62,66 @@ export class LabSessionController extends BaseController<Entity, CreateDto, Upda
 	@ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
 	getPaginated(@Query() input: PaginationInput): Promise<IPaginationOutput<GetDto | GetListDto>> {
 		return super.getPaginated(input);
+	}
+
+	// NEW: Session Management Endpoints
+	@Post('start-session')
+	@ApiOperation({ summary: 'Start lab session', description: 'Start a new lab session for a course group' })
+	@ApiResponse({ type: GetDto, status: 201, description: 'Lab session started successfully' })
+	@ApiResponse({ status: 400, description: 'Bad Request - Invalid data or session already active' })
+	async startSession(@Body() startSessionDto: StartLabSessionDto): Promise<GetDto> {
+		// TODO: Implement startLabSession method in service
+		throw new Error('Not implemented yet');
+	}
+
+	@Get('assistant/:assistantId/group/:courseGroupId/active')
+	@ApiOperation({ summary: 'Get active session details', description: 'Get details of current active session for a course group' })
+	@ApiParam({ name: 'assistantId', description: 'Assistant ID', type: 'string' })
+	@ApiParam({ name: 'courseGroupId', description: 'Course Group ID', type: 'string' })
+	@ApiResponse({ type: ActiveSessionDetailsDto, status: 200, description: 'Active session details retrieved' })
+	@ApiResponse({ status: 404, description: 'No active session found' })
+	async getActiveSession(
+		@Param('assistantId') assistantId: UUID,
+		@Param('courseGroupId') courseGroupId: UUID
+	): Promise<ActiveSessionDetailsDto> {
+		// TODO: Implement getActiveSessionDetails method in service
+		throw new Error('Not implemented yet');
+	}
+
+	@Post(':sessionId/attendance')
+	@ApiOperation({ summary: 'Take attendance', description: 'Mark student as present or absent' })
+	@ApiParam({ name: 'sessionId', description: 'Session ID', type: 'string' })
+	@ApiResponse({ status: 200, description: 'Attendance recorded successfully' })
+	async takeAttendance(
+		@Param('sessionId') sessionId: UUID,
+		@Body() attendanceDto: TakeAttendanceDto
+	): Promise<{ message: string }> {
+		// TODO: Implement takeAttendance method in service
+		throw new Error('Not implemented yet');
+	}
+
+	@Post(':sessionId/add-student')
+	@ApiOperation({ summary: 'Add student to session', description: 'Add a student who was not initially in the session' })
+	@ApiParam({ name: 'sessionId', description: 'Session ID', type: 'string' })
+	@ApiResponse({ status: 200, description: 'Student added to session successfully' })
+	async addStudentToSession(
+		@Param('sessionId') sessionId: UUID,
+		@Body() addStudentDto: AddStudentToSessionDto
+	): Promise<{ message: string }> {
+		// TODO: Implement addStudentToSession method in service
+		throw new Error('Not implemented yet');
+	}
+
+	@Post(':sessionId/award-points')
+	@ApiOperation({ summary: 'Award extra points', description: 'Award extra points to a student' })
+	@ApiParam({ name: 'sessionId', description: 'Session ID', type: 'string' })
+	@ApiResponse({ status: 200, description: 'Extra points awarded successfully' })
+	async awardExtraPoints(
+		@Param('sessionId') sessionId: UUID,
+		@Body() pointsDto: AwardExtraPointsDto
+	): Promise<{ message: string }> {
+		// TODO: Implement awardExtraPoints method in service
+		throw new Error('Not implemented yet');
 	}
 
 	@Get(':' + constants.entity_id)

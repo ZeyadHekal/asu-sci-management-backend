@@ -7,6 +7,7 @@ import { Lab } from '../labs/lab.entity';
 
 @Entity('course_groups')
 @Unique(['courseId', 'order'])
+@Unique(['courseId', 'groupNumber'])
 @Index('idx_course_groups_course_default', ['courseId', 'isDefault'])
 @Index('idx_course_groups_is_default', ['isDefault'])
 @Index('idx_course_groups_course_id', ['courseId'])
@@ -15,6 +16,10 @@ export class CourseGroup extends ManagementEntity {
 	@Column({ nullable: false, name: 'course_id' })
 	@Expose()
 	courseId: UUID;
+
+	@Column({ nullable: false, name: 'group_number' })
+	@Expose()
+	groupNumber: number;
 
 	@Column({ nullable: false })
 	@Expose()

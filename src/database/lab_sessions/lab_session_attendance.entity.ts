@@ -20,6 +20,14 @@ export class LabSessionAttentance extends OmitType(ManagementEntity, ['id']) {
 	@Expose()
 	isAttended: boolean;
 
+	@Column({ type: 'decimal', precision: 5, scale: 2, default: 0, name: 'attendance_points' })
+	@Expose()
+	attendancePoints: number;
+
+	@Column({ type: 'decimal', precision: 5, scale: 2, default: 0, name: 'extra_points' })
+	@Expose()
+	extraPoints: number;
+
 	@CreateDateColumn()
 	@Expose()
 	created_at: Date;

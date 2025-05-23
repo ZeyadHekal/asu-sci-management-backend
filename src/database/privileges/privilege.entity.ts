@@ -11,21 +11,27 @@ import { Expose } from 'class-transformer';
 @Entity('privileges')
 export class Privilege extends ManagementEntity {
 	@Column({ type: 'enum', enum: PrivilegeCode })
+	@Expose()
 	code: PrivilegeCode; // e.g., 'VIEW_COURSE', 'MANAGE_COURSE'
 
 	@Column()
+	@Expose()
 	friendlyName: string; // e.g., 'VIEW_COURSE', 'MANAGE_COURSE'
 
 	@Column()
+	@Expose()
 	group: string; // e.g., 'COURSES', 'REPORTS'
 
 	@Column({ nullable: true })
+	@Expose()
 	paramKey: string; // e.g., 'courseId' - the route param to check
 
 	@Column({ default: false })
+	@Expose()
 	requiresResource: boolean; // if true, the privilege is tied to a resource ID
 
 	@Column({ nullable: true })
+	@Expose()
 	entityName: EntityName; // e.g., 'course', 'report'
 
 	@Column({ nullable: false, unique: true })

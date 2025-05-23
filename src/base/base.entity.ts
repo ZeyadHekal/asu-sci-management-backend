@@ -8,9 +8,11 @@ export class ManagementEntity extends BaseEntity {
 	id: UUID;
 
 	@CreateDateColumn()
+	@Expose()
 	created_at: Date;
 
 	@UpdateDateColumn()
+	@Expose()
 	updated_at: Date;
 
 	async getIds(objects: any, key: string = 'id'): Promise<number[]> {

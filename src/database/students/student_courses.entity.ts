@@ -7,7 +7,7 @@ import { CourseGroup } from '../courses/course-group.entity';
 import { ManagementEntity } from 'src/base/base.entity';
 import { OmitType } from '@nestjs/swagger';
 
-@Entity('student_course')
+@Entity('student_courses')
 @Index('idx_student_courses_course_id', ['courseId'])
 @Index('idx_student_courses_student_id', ['studentId'])
 @Index('idx_student_courses_course_group_id', ['courseGroupId'])

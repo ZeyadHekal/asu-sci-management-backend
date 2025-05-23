@@ -10,6 +10,7 @@ import { User } from 'src/database/users/user.entity';
 import { ChannelType, WSEventType, getChannelName } from './websocket.interfaces';
 import { ConfigService } from '@nestjs/config';
 import { StudentEventSchedule } from 'src/database/events/event_schedules.entity';
+import { EventType } from 'src/database/events/event.entity';
 import { UUID } from 'crypto';
 
 @WebSocketGateway(undefined, {
@@ -121,7 +122,7 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
 				.where('ses.student_id = :studentId', { studentId })
 				.andWhere('es.dateTime >= :today', { today })
 				.andWhere('es.dateTime < :nextWeek', { nextWeek })
-				.andWhere('e.isExam = true')
+				.andWhere('e.eventType = :eventType', { eventType: EventType.EXAM })
 				.select('ses.eventSchedule_id')
 				.getRawMany();
 
