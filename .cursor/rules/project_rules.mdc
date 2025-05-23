@@ -1,0 +1,7 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Don't create or run migration files as the project is in sync mode
+

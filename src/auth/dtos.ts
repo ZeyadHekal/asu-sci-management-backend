@@ -1,12 +1,13 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, IntersectionType } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
-import { IsJWT, IsString, IsStrongPassword } from 'class-validator';
+import { IsJWT, IsString, IsStrongPassword, IsUUID } from 'class-validator';
+import { UUID } from 'crypto';
 
 export class RefreshRequsetDto {
 	@ApiProperty()
 	@IsJWT()
 	@Expose()
-	refereshToken: string;
+	refreshToken: string;
 }
 
 export class AuthJwtDto extends RefreshRequsetDto {
@@ -16,19 +17,60 @@ export class AuthJwtDto extends RefreshRequsetDto {
 	accessToken: string;
 }
 
-export class LoginSuccessDto extends AuthJwtDto {
-	// TODO: PrivilegeListDto[]
+export class PrivilegRefreshDto {
 	@ApiProperty()
 	@Expose()
-	privileges: string;
+	privileges: string[];
+}
+
+export class UserInfoDto {
+	@ApiProperty()
+	@Expose()
+	@IsUUID()
+	id: UUID;
+
+	@ApiProperty()
+	@Expose()
+	name: string;
+
+	@ApiProperty()
+	@Expose()
+	username: string;
+
+	@ApiProperty()
+	@Expose()
+	userType: string;
+
+	@ApiProperty()
+	@Expose()
+	isStudent: boolean;
+
+	@ApiProperty({ required: false, description: 'Exam mode status for students' })
+	@Expose()
+	examModeStatus?: {
+		isInExamMode: boolean;
+		examStartsIn?: number;
+		examSchedules: {
+			eventScheduleId: UUID;
+			eventName: string;
+			dateTime: Date;
+			status: string;
+		}[];
+	};
+}
+
+export class LoginSuccessDto extends IntersectionType(AuthJwtDto, PrivilegRefreshDto) {
+	@ApiProperty()
+	@Expose()
+	user: UserInfoDto;
 }
 
 export class LoginRequestDto {
-	@ApiProperty()
+	@ApiProperty({ example: 'admin' })
 	@IsString()
 	@Expose()
 	username: string;
-	@ApiProperty()
+	@ApiProperty({ example: 'Abcd@1234' })
 	@IsStrongPassword({}, { message: 'Password must be at least of length 8 and includes numbers, lower and upper case letters and symbols.' })
 	@Expose()
 	password: string;

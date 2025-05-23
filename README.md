@@ -32,6 +32,33 @@
 $ npm install
 ```
 
+### Environment Variables
+
+Create a `.env` file in the root directory with the following variables:
+
+```
+# Database Configuration
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=postgres
+DB_PASSWORD=password
+DB_DATABASE=asu_sci_management
+
+# JWT Secret for Authentication
+JWT_SECRET=your-jwt-secret
+
+# Default User Creation Flags
+# Set to 'true' to create non-admin default users during seeding
+# Note: Admin user is always created regardless of this setting
+CREATE_DEFAULT_USERS=false
+```
+
+Default users will be created with the following usernames and password:
+- Username: lowercase version of user type with underscores instead of spaces (e.g., `admin`, `secretary`, `lab_admin`, `student`)
+- Password: `Abcd@1234`
+
+The system always creates the Admin user. Other users (Secretary, Lab Admin, Student) are only created if CREATE_DEFAULT_USERS is set to 'true'.
+
 ## Compile and run the project
 
 ```bash

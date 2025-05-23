@@ -1,12 +1,29 @@
 import { Global, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { PrivilegeGroup } from './privileges/group.entity';
-import { ParameterizedPrivilege } from './privileges/parameterized.entity';
-import { Privilege } from './privileges/privilege.entity';
-import { SimplePrivilege } from './privileges/simple.entity';
+import { Privilege, UserPrivilege, UserTypePrivilege } from './privileges/privilege.entity';
 import { ConfigService } from '@nestjs/config';
 import { User } from './users/user.entity';
 import { UserType } from './users/user-type.entity';
+import { Student } from './students/student.entity';
+import { Course } from './courses/course.entity';
+import { CourseGroup } from './courses/course-group.entity';
+import { Material } from './materials/material.entity';
+import { Lab } from './labs/lab.entity';
+import { Software } from './softwares/software.entity';
+import { StudentCourses } from './students/student_courses.entity';
+import { StudentCoursesDegree } from './students/student_course_degrees.entity';
+import { Event } from './events/event.entity';
+import { EventSchedule } from './events/event_schedules.entity';
+import { StudentEventAttendance } from './students/student_event_attendance.entity';
+import { StudentsFiles } from './students/student_files.entity';
+import { LabSessionAttentance } from './lab_sessions/lab_session_attendance.entity';
+import { LabSession } from './lab_sessions/lab_session.entity';
+import { CourseGroupSchedule } from './courses/course_labs.entity';
+import { DeviceReport } from './devices/devices_reports.entity';
+import { Device } from './devices/device.entity';
+import { DeviceSoftware } from './devices/devices_softwares.entity';
+import { DeviceMaintenanceHistory } from './devices/device-maintenance-history.entity';
+import { DeviceLoginHistory } from './devices/device-login-history.entity';
 
 @Global()
 @Module({
@@ -25,7 +42,33 @@ import { UserType } from './users/user-type.entity';
 				autoLoadEntities: true,
 			}),
 		}),
-		TypeOrmModule.forFeature([User, UserType, PrivilegeGroup, Privilege, SimplePrivilege, ParameterizedPrivilege]),
+		TypeOrmModule.forFeature([
+			User,
+			UserType,
+			Privilege,
+			UserPrivilege,
+			UserTypePrivilege,
+			Student,
+			Course,
+			CourseGroup,
+			Material,
+			Lab,
+			Software,
+			StudentCourses,
+			Event,
+			StudentCoursesDegree,
+			EventSchedule,
+			StudentEventAttendance,
+			StudentsFiles,
+			LabSession,
+			LabSessionAttentance,
+			CourseGroupSchedule,
+			DeviceReport,
+			Device,
+			DeviceSoftware,
+			DeviceMaintenanceHistory,
+			DeviceLoginHistory,
+		]),
 	],
 	exports: [TypeOrmModule],
 })
