@@ -6,6 +6,7 @@ import { AuthenticationGuard } from './providers';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { EventModule } from 'src/modules/events/module';
+import { DeviceLoginHistoryModule } from 'src/modules/device-login-history/module';
 
 @Module({
 	imports: [
@@ -16,6 +17,7 @@ import { EventModule } from 'src/modules/events/module';
 			inject: [ConfigService],
 		}),
 		EventModule,
+		DeviceLoginHistoryModule,
 	],
 	controllers: [AuthController],
 	providers: [AuthService, { provide: APP_GUARD, useClass: AuthenticationGuard }],

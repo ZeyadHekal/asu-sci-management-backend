@@ -76,6 +76,120 @@ export class DeviceListDto extends DeviceDto {
 	@ApiProperty()
 	@Expose()
 	labName: string;
+
+	@ApiProperty({ description: 'Total number of reports for this device' })
+	@Expose()
+	totalReports: number;
+
+	@ApiProperty({ description: 'Number of non-closed (open) reports for this device' })
+	@Expose()
+	openReports: number;
+}
+
+export class DeviceSoftwareDto {
+	@ApiProperty()
+	@Expose()
+	id: UUID;
+
+	@ApiProperty()
+	@Expose()
+	name: string;
+
+	@ApiProperty()
+	@Expose()
+	hasIssue: boolean;
+
+	@ApiProperty({ required: false })
+	@Expose()
+	issueDescription?: string;
+}
+
+export class DeviceDetailsDto {
+	@ApiProperty()
+	@Expose()
+	id: UUID;
+
+	@ApiProperty()
+	@Expose()
+	name: string;
+
+	@ApiProperty()
+	@Expose()
+	IPAddress: string;
+
+	@ApiProperty()
+	@Expose()
+	hasIssue: boolean;
+
+	@ApiProperty()
+	@Expose()
+	status: string;
+
+	@ApiProperty()
+	@Expose()
+	created_at: Date;
+
+	@ApiProperty()
+	@Expose()
+	updated_at: Date;
+
+	@ApiProperty()
+	@Expose()
+	labId: UUID;
+
+	@ApiProperty()
+	@Expose()
+	labName: string;
+
+	@ApiProperty()
+	@Expose()
+	labLocation?: string;
+
+	@ApiProperty()
+	@Expose()
+	assisstantId: UUID;
+
+	@ApiProperty()
+	@Expose()
+	assistantName: string;
+
+	@ApiProperty()
+	@Expose()
+	assistantEmail?: string;
+
+	@ApiProperty({ type: () => DeviceSpecificationDto, isArray: true })
+	@Expose()
+	@Type(() => DeviceSpecificationDto)
+	specifications: DeviceSpecificationDto[];
+
+	@ApiProperty({ type: () => DeviceSoftwareDto, isArray: true })
+	@Expose()
+	@Type(() => DeviceSoftwareDto)
+	installedSoftware: DeviceSoftwareDto[];
+
+	@ApiProperty()
+	@Expose()
+	totalReports: number;
+
+	@ApiProperty()
+	@Expose()
+	totalMaintenanceRecords: number;
+
+	@ApiProperty()
+	@Expose()
+	totalLoginSessions: number;
+
+	@ApiProperty()
+	@Expose()
+	lastLoginDate?: Date;
+
+	@ApiProperty()
+	@Expose()
+	lastMaintenanceDate?: Date;
+
+	@ApiProperty()
+	@Expose()
+	lastReportDate?: Date;
 }
 
 export class DevicePagedDto implements IPaginationOutput<DeviceListDto> {
@@ -130,4 +244,64 @@ export class DevicePaginationInput extends PaginationInput {
 	@IsString()
 	@Expose()
 	specValue?: string;
+}
+
+export class AddDeviceSoftwareDto {
+	@ApiProperty()
+	@IsString()
+	@Expose()
+	softwareId: UUID;
+
+	@ApiProperty({ required: false, description: 'Whether the software has issues' })
+	@IsOptional()
+	@IsBoolean()
+	@Expose()
+	hasIssue?: boolean;
+
+	@ApiProperty({ required: false, description: 'Description of any issues' })
+	@IsOptional()
+	@IsString()
+	@Expose()
+	issueDescription?: string;
+}
+
+export class UpdateDeviceSoftwareDto {
+	@ApiProperty({ required: false, description: 'Whether the software has issues' })
+	@IsOptional()
+	@IsBoolean()
+	@Expose()
+	hasIssue?: boolean;
+
+	@ApiProperty({ required: false, description: 'Description of any issues' })
+	@IsOptional()
+	@IsString()
+	@Expose()
+	issueDescription?: string;
+}
+
+export class UpdateDeviceSoftwareListDto {
+	@ApiProperty({ type: [String], description: 'Array of software IDs to install on the device' })
+	@IsArray()
+	@IsString({ each: true })
+	@Expose()
+	softwareIds: UUID[];
+}
+
+export class MaintenanceUpdateDto {
+	@ApiProperty({ enum: ['available', 'not available'], description: 'Device availability status' })
+	@IsString()
+	@Expose()
+	status: string;
+
+	@ApiProperty({ required: false, description: 'Maintenance description' })
+	@IsOptional()
+	@IsString()
+	@Expose()
+	description?: string;
+
+	@ApiProperty({ required: false, description: 'Resolution notes' })
+	@IsOptional()
+	@IsString()
+	@Expose()
+	resolutionNotes?: string;
 }

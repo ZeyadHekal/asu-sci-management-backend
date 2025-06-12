@@ -24,9 +24,9 @@ export class DeviceReport extends ManagementEntity {
 	@Expose()
 	deviceId: UUID;
 
-	@Column({ nullable: false, name: 'app_id' })
+	@Column({ nullable: true, name: 'app_id' })
 	@Expose()
-	appId: UUID;
+	appId?: UUID;
 
 	@Column({ nullable: false, name: 'reporter_id' })
 	@Expose()
@@ -36,9 +36,9 @@ export class DeviceReport extends ManagementEntity {
 	@JoinColumn({ name: 'device_id' })
 	device: Promise<Device>;
 
-	@ManyToOne(() => Software, { nullable: false, lazy: true, onDelete: 'RESTRICT', onUpdate: 'CASCADE' })
+	@ManyToOne(() => Software, { nullable: true, lazy: true, onDelete: 'RESTRICT', onUpdate: 'CASCADE' })
 	@JoinColumn({ name: 'app_id' })
-	app: Promise<Software>;
+	app?: Promise<Software>;
 
 	@ManyToOne(() => User, { nullable: false, lazy: true, onDelete: 'RESTRICT', onUpdate: 'CASCADE' })
 	@JoinColumn({ name: 'reporter_id' })

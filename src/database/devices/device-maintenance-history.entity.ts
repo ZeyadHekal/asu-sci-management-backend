@@ -30,9 +30,7 @@ export class DeviceMaintenanceHistory extends ManagementEntity {
     @Expose()
     deviceId: UUID;
 
-    @Column({ nullable: false, name: 'technician_id' })
-    @Expose()
-    technicianId: UUID;
+
 
     @Column({ nullable: true, name: 'related_report_id' })
     @Expose()
@@ -82,13 +80,15 @@ export class DeviceMaintenanceHistory extends ManagementEntity {
     @Expose()
     partsUsed?: string;
 
+    @Column({ type: 'json', nullable: true })
+    @Expose()
+    involvedPersonnel?: string[];
+
     @ManyToOne(() => Device, { nullable: false, lazy: true, onDelete: 'RESTRICT', onUpdate: 'CASCADE' })
     @JoinColumn({ name: 'device_id' })
     device: Promise<Device>;
 
-    @ManyToOne(() => User, { nullable: false, lazy: true, onDelete: 'RESTRICT', onUpdate: 'CASCADE' })
-    @JoinColumn({ name: 'technician_id' })
-    technician: Promise<User>;
+
 
     @ManyToOne(() => DeviceReport, { nullable: true, lazy: true, onDelete: 'SET NULL', onUpdate: 'CASCADE' })
     @JoinColumn({ name: 'related_report_id' })

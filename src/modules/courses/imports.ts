@@ -14,7 +14,7 @@ import { Course } from 'src/database/courses/course.entity';
 export {
 	CreateCourseDto as CreateDto,
 	UpdateCourseDto as UpdateDto,
-	CourseDto as GetDto,
+	CourseDetailDto as GetDto,
 	CourseListDto as GetListDto,
 	CoursePagedDto as PagedDto,
 	CoursePaginationInput as PaginationInput,

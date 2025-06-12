@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateUserTypeDto, UpdateUserTypeDto, UserTypeDto, UserTypeWithPrivilegeDto } from './dtos';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { In, Repository, Not } from 'typeorm';
 import { UserType } from 'src/database/users/user-type.entity';
 import { BaseService } from 'src/base/base.service';
 import { UUID } from 'crypto';
@@ -45,6 +45,15 @@ export class UserTypeService extends BaseService<UserType, CreateUserTypeDto, Up
 		const entity = await this.userTypeRepository.findOne({ where: { id } });
 		entityToCreate.userTypePrivileges = Promise.resolve(privilegeAssignments);
 		return this.mapEntityToGetDto(entity);
+	}
+
+	async findAllForStaffAssignment(): Promise<UserTypeDto[]> {
+		const userTypes = await this.userTypeRepository.find({
+			where: {
+				name: Not('Student')
+			}
+		});
+		return userTypes.map(userType => transformToInstance(UserTypeDto, userType));
 	}
 
 	async getPrivileges(id: UUID): Promise<PrivilegeAssignmentDto[]> {

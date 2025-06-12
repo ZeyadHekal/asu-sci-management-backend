@@ -67,6 +67,10 @@ export class EventSchedule extends ManagementEntity {
 	@Expose()
 	enrolledStudents: number;
 
+	@Column({ default: false })
+	@Expose()
+	autoStart: boolean;
+
 	@Column({ nullable: true, name: 'exam_group_id' })
 	@Expose()
 	examGroupId?: UUID;

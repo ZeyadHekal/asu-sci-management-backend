@@ -8,8 +8,10 @@ import { Course } from 'src/database/courses/course.entity';
 import { CourseGroup } from 'src/database/courses/course-group.entity';
 import { EventSchedule, ExamStatus, StudentEventSchedule } from 'src/database/events/event_schedules.entity';
 import { ExamGroup } from 'src/database/events/exam-groups.entity';
+import { ExamModel, ExamModelFile } from 'src/database/events/exam-models.entity';
 import { Lab } from 'src/database/labs/lab.entity';
 import { User } from 'src/database/users/user.entity';
+import { Device } from 'src/database/devices/device.entity';
 import { WebsocketService } from 'src/websockets/websocket.service';
 import { ChannelType, getChannelName, WSEventType, ExamModeData, ExamAccessData } from 'src/websockets/websocket.interfaces';
 import { UUID } from 'crypto';
@@ -18,6 +20,8 @@ import { FileService } from '../files/file.service';
 import * as ExcelJS from 'exceljs';
 import * as archiver from 'archiver';
 import { Readable } from 'stream';
+import { ExamModeStatusDto, ExamScheduleItemDto } from './dtos';
+import { CourseGroupService } from '../course-groups/service';
 
 export interface GroupCalculationResult {
 	totalStudents: number;
@@ -37,17 +41,6 @@ export interface GroupCalculationResult {
 	}[];
 }
 
-export interface ExamModeStatus {
-	isInExamMode: boolean;
-	examStartsIn?: number; // minutes
-	examSchedules: {
-		eventScheduleId: UUID;
-		eventName: string;
-		dateTime: Date;
-		status: ExamStatus;
-	}[];
-}
-
 @Injectable()
 export class EventService extends BaseService<imports.Entity, imports.CreateDto, imports.UpdateDto, imports.GetDto, imports.GetListDto> {
 	private readonly logger = new Logger(EventService.name);
@@ -60,25 +53,38 @@ export class EventService extends BaseService<imports.Entity, imports.CreateDto,
 		@InjectRepository(EventSchedule) private readonly eventScheduleRepository: Repository<EventSchedule>,
 		@InjectRepository(StudentEventSchedule) private readonly studentEventScheduleRepository: Repository<StudentEventSchedule>,
 		@InjectRepository(ExamGroup) private readonly examGroupRepository: Repository<ExamGroup>,
+        @InjectRepository(ExamModel) private readonly examModelRepository: Repository<ExamModel>,
+        @InjectRepository(ExamModelFile) private readonly examModelFileRepository: Repository<ExamModelFile>,
 		@InjectRepository(Lab) private readonly labRepository: Repository<Lab>,
 		@InjectRepository(User) private readonly userRepository: Repository<User>,
+        @InjectRepository(Device) private readonly deviceRepository: Repository<Device>,
 		private readonly websocketService: WebsocketService,
 		private readonly fileService: FileService,
+        private readonly courseGroupService: CourseGroupService,
 	) {
 		super(imports.Entity, imports.CreateDto, imports.UpdateDto, imports.GetDto, imports.GetListDto, repository);
 	}
 
 	async beforeCreateDto(dto: imports.CreateDto): Promise<imports.CreateDto> {
-		const lab = await this.courseRepository.findOneBy({ id: dto.courseId });
-		if (!lab) {
-			throw new BadRequestException('Invalid lab id!');
+        const course = await this.courseRepository.findOneBy({ id: dto.courseId });
+        if (!course) {
+            throw new BadRequestException('Invalid course id!');
 		}
+
+        // Ensure events have a startDateTime
+        if (!dto.startDateTime) {
+            // Default to 24 hours from now if not specified
+            dto.startDateTime = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        }
+
 		return dto;
 	}
 	async beforeUpdateDto(dto: imports.CreateDto): Promise<imports.CreateDto> {
-		const lab = await this.courseRepository.findOneBy({ id: dto.courseId });
-		if (!lab) {
-			throw new BadRequestException('Invalid lab id!');
+        if (dto.courseId) {
+            const course = await this.courseRepository.findOneBy({ id: dto.courseId });
+            if (!course) {
+                throw new BadRequestException('Invalid course id!');
+            }
 		}
 		return dto;
 	}
@@ -151,19 +157,14 @@ export class EventService extends BaseService<imports.Entity, imports.CreateDto,
 			.groupBy('cg.id')
 			.getRawAndEntities();
 
-		// Get available labs if exam is in lab
-		let availableLabs: any[] = [];
-		if (event.isInLab) {
-			availableLabs = await this.labRepository
-				.createQueryBuilder('lab')
-				.leftJoin('course_labs', 'cl', 'cl.lab_id = lab.id')
-				.where('cl.course_id = :courseId', { courseId: event.courseId })
-				.getMany();
-		}
+        // Get available labs for the course
+        const availableLabs = await this.labRepository
+            .createQueryBuilder('lab')
+            .getMany();
 
 		const groupDistribution = courseGroups.entities.map((group, index) => {
 			const studentCount = parseInt(courseGroups.raw[index].studentCount) || 0;
-			const maxCapacity = event.isInLab ? group.capacity || 30 : 50; // Default capacities
+            const maxCapacity = group.capacity || 30; // Use group capacity
 			const recommendedSessions = Math.ceil(studentCount / maxCapacity);
 
 			return {
@@ -286,7 +287,7 @@ export class EventService extends BaseService<imports.Entity, imports.CreateDto,
 	/**
 	 * Get exam mode status for a student
 	 */
-	async getStudentExamModeStatus(studentId: UUID): Promise<ExamModeStatus> {
+	async getStudentExamModeStatus(studentId: UUID): Promise<ExamModeStatusDto> {
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
 		const tomorrow = new Date(today);
@@ -300,7 +301,7 @@ export class EventService extends BaseService<imports.Entity, imports.CreateDto,
 			.where('ses.student_id = :studentId', { studentId })
 			.andWhere('es.dateTime >= :today', { today })
 			.andWhere('es.dateTime < :tomorrow', { tomorrow })
-			.andWhere('e.isExam = true')
+            .andWhere('e.eventType = :eventType', { eventType: imports.EventType.EXAM })
 			.select(['es.id', 'es.dateTime', 'es.status', 'e.name', 'e.examModeStartMinutes'])
 			.getRawMany();
 
@@ -312,7 +313,13 @@ export class EventService extends BaseService<imports.Entity, imports.CreateDto,
 			const examStartTime = new Date(schedule.es_dateTime);
 			const examModeStartTime = new Date(examStartTime.getTime() - schedule.e_examModeStartMinutes * 60 * 1000);
 
-			const isScheduleInExamMode = now >= examModeStartTime && now <= examStartTime;
+            // Consider student in exam mode if:
+            // 1. During preparation period (exam mode active but exam hasn't started yet)
+            // 2. During active exam (exam has started but not ended)
+            const isInPreparationMode = (now >= examModeStartTime && now <= examStartTime) || schedule.es_status === ExamStatus.EXAM_MODE_ACTIVE;
+            const isInActiveExam = schedule.es_status === ExamStatus.STARTED;
+
+            const isScheduleInExamMode = isInPreparationMode || isInActiveExam;
 			if (isScheduleInExamMode) {
 				isInExamMode = true;
 			}
@@ -364,7 +371,7 @@ export class EventService extends BaseService<imports.Entity, imports.CreateDto,
 	}
 
 	/**
-	 * Start exam manually
+	 * Start exam manually (for non-auto-start exams)
 	 */
 	async startExam(eventScheduleId: UUID, adminId: UUID): Promise<void> {
 		const schedule = await this.eventScheduleRepository.findOne({
@@ -376,24 +383,37 @@ export class EventService extends BaseService<imports.Entity, imports.CreateDto,
 			throw new NotFoundException('Event schedule not found');
 		}
 
+        const event = await schedule.event;
+
 		if (schedule.status !== ExamStatus.SCHEDULED && schedule.status !== ExamStatus.EXAM_MODE_ACTIVE) {
 			throw new BadRequestException('Exam cannot be started from current status');
 		}
 
-		// Update status and start time
+        // For non-auto-start exams, set the exam to start in 1 minute
+        const startTime = new Date(Date.now() + 60 * 1000); // 1 minute from now
+
+        // Update the scheduled start time and prepare for auto-start
 		await this.eventScheduleRepository.update(
 			{ id: eventScheduleId },
 			{
-				status: ExamStatus.STARTED,
-				actualStartTime: new Date(),
+                dateTime: startTime,
+                status: ExamStatus.EXAM_MODE_ACTIVE, // Keep in exam mode until the countdown
 			},
 		);
 
-		// Notify students via WebSocket
-		const event = await schedule.event;
-		await this.notifyExamStart(eventScheduleId, event.name);
+        // Notify students that the exam will start in 1 minute
+        const channel = getChannelName(ChannelType.EVENT_SCHEDULE, eventScheduleId);
+        const data = {
+            eventScheduleId,
+            eventName: event.name,
+            message: 'Exam will start in 1 minute',
+            startTime: startTime.toISOString(),
+            timestamp: new Date().toISOString(),
+        };
 
-		this.logger.log(`Exam started manually by admin ${adminId} for schedule ${eventScheduleId}`);
+        await this.websocketService.emitToChannel(channel, WSEventType.EXAM_STARTING_SOON, data);
+
+        this.logger.log(`Exam scheduled to start in 1 minute by admin ${adminId} for schedule ${eventScheduleId}`);
 	}
 
 	/**
@@ -429,15 +449,20 @@ export class EventService extends BaseService<imports.Entity, imports.CreateDto,
 	@Cron(CronExpression.EVERY_MINUTE)
 	async handleAutomaticExamOperations(): Promise<void> {
 		const now = new Date();
+        this.logger.debug(`🕐 Running automatic exam operations at ${now.toLocaleTimeString()}`);
 
-		// Handle exam mode activation (30 minutes before exam)
-		await this.activateExamMode(now);
+        try {
+            // Handle exam mode activation (30 minutes before exam)
+            await this.activateExamMode(now);
 
-		// Handle auto-start exams
-		await this.autoStartExams(now);
+            // Handle auto-start exams
+            await this.autoStartExams(now);
 
-		// Handle auto-end exams
-		await this.autoEndExams(now);
+            // Handle auto-end exams
+            await this.autoEndExams(now);
+        } catch (error) {
+            this.logger.error('Error in automatic exam operations:', error);
+        }
 	}
 
 	private async activateExamMode(now: Date): Promise<void> {
@@ -445,7 +470,7 @@ export class EventService extends BaseService<imports.Entity, imports.CreateDto,
 			.createQueryBuilder('es')
 			.leftJoin('events', 'e', 'e.id = es.event_id')
 			.where('es.status = :status', { status: ExamStatus.SCHEDULED })
-			.andWhere('e.isExam = true')
+            .andWhere('e.eventType = :eventType', { eventType: imports.EventType.EXAM })
 			.andWhere('es.dateTime > :now', { now })
 			.andWhere('es.dateTime <= :examModeTime', {
 				examModeTime: new Date(now.getTime() + 35 * 60 * 1000), // 35 minutes buffer
@@ -453,6 +478,7 @@ export class EventService extends BaseService<imports.Entity, imports.CreateDto,
 			.select(['es.id', 'es.dateTime', 'e.examModeStartMinutes', 'e.name'])
 			.getRawMany();
 
+        let activatedCount = 0;
 		for (const schedule of schedules) {
 			const examStartTime = new Date(schedule.es_dateTime);
 			const examModeStartTime = new Date(examStartTime.getTime() - schedule.e_examModeStartMinutes * 60 * 1000);
@@ -471,9 +497,14 @@ export class EventService extends BaseService<imports.Entity, imports.CreateDto,
 				// Send exam mode status updates to all students in this exam
 				await this.notifyStudentsExamModeChange(schedule.es_id);
 
-				this.logger.log(`Exam mode activated for schedule ${schedule.es_id}`);
+                this.logger.log(`⏰ Exam mode activated: "${schedule.e_name}" (schedule ${schedule.es_id}) at ${now.toLocaleTimeString()}`);
+                activatedCount++;
 			}
 		}
+
+        if (activatedCount > 0) {
+            this.logger.log(`⏰ Activated exam mode for ${activatedCount} exam(s)`);
+        }
 	}
 
 	private async autoStartExams(now: Date): Promise<void> {
@@ -483,8 +514,12 @@ export class EventService extends BaseService<imports.Entity, imports.CreateDto,
 			.where('es.status = :status', { status: ExamStatus.EXAM_MODE_ACTIVE })
 			.andWhere('e.autoStart = true')
 			.andWhere('es.dateTime <= :now', { now })
-			.select(['es.id', 'e.name'])
+            .select(['es.id', 'e.name', 'es.dateTime'])
 			.getRawMany();
+
+        if (schedules.length > 0) {
+            this.logger.log(`🚀 Found ${schedules.length} exam(s) ready to auto-start`);
+        }
 
 		for (const schedule of schedules) {
 			await this.eventScheduleRepository.update(
@@ -500,7 +535,7 @@ export class EventService extends BaseService<imports.Entity, imports.CreateDto,
 			// Send exam mode status updates to all students in this exam
 			await this.notifyStudentsExamModeChange(schedule.es_id);
 
-			this.logger.log(`Exam auto-started for schedule ${schedule.es_id}`);
+            this.logger.log(`🚀 Exam auto-started: "${schedule.e_name}" (schedule ${schedule.es_id}) at ${now.toLocaleTimeString()}`);
 		}
 	}
 
@@ -513,6 +548,7 @@ export class EventService extends BaseService<imports.Entity, imports.CreateDto,
 			.select(['es.id', 'es.actualStartTime', 'e.duration', 'e.name'])
 			.getRawMany();
 
+        let endedCount = 0;
 		for (const schedule of schedules) {
 			const examEndTime = new Date(schedule.es_actualStartTime.getTime() + schedule.e_duration * 60 * 1000);
 
@@ -530,9 +566,14 @@ export class EventService extends BaseService<imports.Entity, imports.CreateDto,
 				// Send exam mode status updates to all students in this exam
 				await this.notifyStudentsExamModeChange(schedule.es_id);
 
-				this.logger.log(`Exam auto-ended for schedule ${schedule.es_id}`);
+                this.logger.log(`✅ Exam auto-ended: "${schedule.e_name}" (schedule ${schedule.es_id}) at ${now.toLocaleTimeString()}`);
+                endedCount++;
 			}
 		}
+
+        if (endedCount > 0) {
+            this.logger.log(`✅ Auto-ended ${endedCount} exam(s)`);
+        }
 	}
 
 	/**
@@ -700,27 +741,55 @@ export class EventService extends BaseService<imports.Entity, imports.CreateDto,
 	}
 
 	/**
-	 * Assign random exam models to students
+	 * Assign exam models to students based on event groups
+	 * Admin assigns models for each group, and each student gets a random model from their group
 	 */
 	private async assignRandomExamModels(eventScheduleId: UUID, examModels: string[]): Promise<void> {
+        if (examModels.length === 0) {
+            this.logger.warn(`No exam models to assign for schedule ${eventScheduleId}`);
+            return;
+        }
+
+        // Get the event schedule and its associated exam group
+        const schedule = await this.eventScheduleRepository.findOne({
+            where: { id: eventScheduleId },
+            relations: ['examGroup']
+        });
+
+        if (!schedule) {
+            throw new NotFoundException('Event schedule not found');
+        }
+
+        // Get all student schedules for this event schedule
 		const studentSchedules = await this.studentEventScheduleRepository.find({
 			where: { eventSchedule_id: eventScheduleId }
 		});
 
+        if (studentSchedules.length === 0) {
+            this.logger.warn(`No students enrolled in schedule ${eventScheduleId}`);
+            return;
+        }
+
+        // For each student in the group, assign a random model from the available models
+        // This allows each student to get a different model even within the same group
 		for (const studentSchedule of studentSchedules) {
-			const randomIndex = Math.floor(Math.random() * examModels.length);
-			const assignedModel = examModels[randomIndex];
+            // Assign a random model to each student
+            const randomModelIndex = Math.floor(Math.random() * examModels.length);
+            const assignedModel = examModels[randomModelIndex];
 
 			await this.studentEventScheduleRepository.update(
 				{
 					student_id: studentSchedule.student_id,
 					eventSchedule_id: eventScheduleId
 				},
-				{ assignedExamModelUrl: assignedModel }
+                {
+                    assignedExamModelUrl: assignedModel,
+                    examModel: `Model ${randomModelIndex + 1}` // Human-readable model name
+                }
 			);
 		}
 
-		this.logger.log(`Assigned random exam models to ${studentSchedules.length} students for schedule ${eventScheduleId}`);
+        this.logger.log(`Assigned random exam models to ${studentSchedules.length} students in schedule ${eventScheduleId}`);
 	}
 
 	/**
@@ -936,4 +1005,981 @@ export class EventService extends BaseService<imports.Entity, imports.CreateDto,
 			errors
 		};
 	}
+
+    async getCourseEvents(courseId: UUID): Promise<imports.GetListDto[]> {
+        // Validate course exists
+        const course = await this.courseRepository.findOneBy({ id: courseId });
+        if (!course) {
+            throw new NotFoundException('Course not found!');
+        }
+
+        // Get all events for this course
+        const events = await this.repository
+            .createQueryBuilder('event')
+            .where('event.courseId = :courseId', { courseId })
+            .orderBy('event.created_at', 'DESC')
+            .getMany();
+
+        // Transform events to include additional data
+        const eventListDtos = await Promise.all(
+            events.map(async (event) => {
+                // Count how many groups are assigned to this event
+                const eventGroupsCount = await this.examGroupRepository.count({
+                    where: { eventId: event.id }
+                });
+
+                // Get event schedules to calculate additional info
+                const schedules = await this.eventScheduleRepository.find({
+                    where: { eventId: event.id }
+                });
+
+                return {
+                    ...event,
+                    eventGroups: eventGroupsCount,
+                    totalSchedules: schedules.length,
+                    hasSchedules: schedules.length > 0,
+                    courseCode: `${course.subjectCode}${course.courseNumber}`,
+                    courseName: course.name,
+                };
+            })
+        );
+
+        return eventListDtos as imports.GetListDto[];
+    }
+
+    async getStudentExams(studentId: UUID): Promise<any[]> {
+        // Query to get the raw data
+        const rawResults = await this.studentEventScheduleRepository
+            .createQueryBuilder('ses')
+            .leftJoin('event_schedules', 'es', 'es.id = ses.eventSchedule_id')
+            .leftJoin('events', 'event', 'event.id = es.event_id')
+            .leftJoin('courses', 'course', 'course.id = event.courseId')
+            .leftJoin('labs', 'lab', 'lab.id = es.lab_id')
+            .select([
+                'ses.eventSchedule_id AS scheduleId',
+                'ses.student_id AS studentId',
+                'ses.submittedFiles AS submittedFiles',
+                'ses.submittedAt AS submittedAt',
+                'ses.mark AS mark',
+                'es.dateTime AS dateTime',
+                'es.examFiles AS examFiles',
+                'es.status AS status',
+                'es.examGroupId AS examGroupId',
+                'event.id AS eventId',
+                'event.name AS eventName',
+                'event.duration AS duration',
+                'event.examModeStartMinutes AS examModeStartMinutes',
+                'course.name AS courseName',
+                'course.subjectCode AS subjectCode',
+                'course.courseNumber AS courseNumber',
+                'lab.name AS labName'
+            ])
+            .where('ses.student_id = :studentId', { studentId })
+            .andWhere('event.eventType = :eventType', { eventType: imports.EventType.EXAM })
+            .orderBy('es.dateTime', 'ASC')
+            .getRawMany();
+
+        // Transform to student exam DTOs
+        return rawResults.map((result) => {
+            const now = new Date();
+            const examDate = new Date(result.dateTime);
+            const examModeStart = new Date(examDate.getTime() - (result.examModeStartMinutes || 30) * 60 * 1000);
+
+            // Determine status
+            let status = 'upcoming';
+            let hasAccess = false;
+            let canSubmit = false;
+
+            if (result.status === 'ended') {
+                status = 'completed';
+            } else if (result.status === 'started') {
+                status = 'in_progress';
+                hasAccess = true;
+                canSubmit = true;
+            } else if (result.status === 'exam_mode_active') {
+                status = 'exam_mode';
+                hasAccess = true;
+            } else if (now >= examModeStart && now < examDate) {
+                status = 'exam_mode';
+                hasAccess = true;
+            } else if (now >= examDate) {
+                status = 'in_progress';
+                hasAccess = true;
+                canSubmit = true;
+            }
+
+            return {
+                id: result.eventId,
+                name: result.eventName,
+                courseName: result.courseName,
+                courseCode: `${result.subjectCode}${result.courseNumber}`,
+                dateTime: result.dateTime,
+                duration: result.duration,
+                location: result.labName || 'Online',
+                status,
+                hasAccess,
+                examFiles: result.examFiles ? result.examFiles.split(',') : [],
+                groupId: result.examGroupId,
+                scheduleId: result.scheduleId,
+                submittedFiles: result.submittedFiles ? result.submittedFiles.split(',') : [],
+                canSubmit,
+            };
+        });
+    }
+
+    async exportCourseEventsToExcel(courseId: UUID): Promise<ExcelJS.Workbook> {
+        // Get course events
+        const events = await this.getCourseEvents(courseId);
+
+        // Create workbook and worksheet
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Course Events');
+
+        // Define columns
+        worksheet.columns = [
+            { header: 'Event Name', key: 'name', width: 30 },
+            { header: 'Type', key: 'type', width: 15 },
+            { header: 'Location', key: 'location', width: 15 },
+            { header: 'Duration (min)', key: 'duration', width: 15 },
+            { header: 'Marks', key: 'degree', width: 10 },
+            { header: 'Groups', key: 'eventGroups', width: 10 },
+            { header: 'Auto Start', key: 'autoStart', width: 12 },
+            { header: 'Exam Mode Start (min)', key: 'examModeStartMinutes', width: 20 }
+        ];
+
+        // Add header row styling
+        worksheet.getRow(1).font = { bold: true };
+        worksheet.getRow(1).fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFE0E0E0' }
+        };
+
+        // Add data rows
+        events.forEach((event: any) => {
+            worksheet.addRow({
+                name: event.name,
+                type: event.eventType === imports.EventType.EXAM ? 'Exam' : 'Assignment',
+                location: 'In Lab',
+                duration: event.duration,
+                degree: event.degree || 0,
+                eventGroups: event.eventGroups || 0,
+                autoStart: event.autoStart ? 'Yes' : 'No',
+                examModeStartMinutes: event.examModeStartMinutes || 0
+            });
+        });
+
+        // Auto-fit columns
+        worksheet.columns.forEach(column => {
+            column.width = Math.max(column.width || 10, 15);
+        });
+
+        return workbook;
+    }
+
+    /**
+     * Calculate lab capacity for a specific course based on software requirements
+     * Delegates to CourseGroupService for consistent calculation logic
+     */
+    private async calculateLabCapacityForCourse(labId: UUID, courseId: UUID): Promise<number> {
+        return this.courseGroupService.calculateLabCapacityForCourse(labId, courseId);
+    }
+
+    /**
+     * Simulate group creation for event scheduling - starts with no groups, admin adds groups by selecting labs
+     */
+    async simulateGroupCreation(courseId: UUID): Promise<imports.GroupCreationSimulationDto> {
+        // Get all students enrolled in the course
+        const totalStudentsQuery = await this.userRepository
+            .createQueryBuilder('user')
+            .leftJoin('student_courses', 'sc', 'sc.student_id = user.id')
+            .where('sc.course_id = :courseId', { courseId })
+            .getCount();
+
+        // Start with no proposed groups - admin will add them
+        const proposedGroups: imports.ProposedGroupDto[] = [];
+
+        // Get course to understand software requirements
+        const course = await this.courseRepository.findOneBy({ id: courseId });
+        if (!course) {
+            throw new BadRequestException('Course not found');
+        }
+
+        const courseSoftwares = await course.softwares;
+        const requiredSoftware = courseSoftwares.map((software) => software.name);
+
+        // Get available labs for selection with proper capacity calculation
+        const labs = await this.labRepository.find({ relations: ['devices', 'devices.deviceSoftwares'] });
+        const availableLabs: imports.LabAvailabilityDto[] = await Promise.all(
+            labs.map(async (lab) => {
+                // Use the abstracted capacity calculation from CourseGroupService
+                const effectiveCapacity = await this.calculateLabCapacityForCourse(lab.id, courseId);
+
+                return {
+                    labId: lab.id,
+                    labName: lab.name,
+                    totalCapacity: effectiveCapacity, // Use effective capacity based on software requirements
+                    availableCapacity: effectiveCapacity, // Full effective capacity available initially
+                    requiredSoftware: requiredSoftware,
+                    hasRequiredSoftware: effectiveCapacity > 0
+                };
+            })
+        );
+
+        // All students are uncovered initially since no groups exist
+        const uncoveredStudents = totalStudentsQuery;
+
+        return {
+            totalStudents: totalStudentsQuery,
+            requiredGroups: 0, // No groups initially
+            proposedGroups,
+            uncoveredStudents,
+            canCreateEvent: false, // Cannot create event until all students are covered
+            availableLabs
+        };
+    }
+
+    /**
+     * Add a group to the simulation by selecting a lab
+     */
+    async addGroupToSimulation(courseId: UUID, labId: UUID, proposedCapacity?: number): Promise<imports.GroupCreationSimulationDto> {
+        // Get current simulation state
+        const simulation = await this.simulateGroupCreation(courseId);
+
+        // Find the selected lab
+        const selectedLab = simulation.availableLabs.find(lab => lab.labId === labId);
+        if (!selectedLab) {
+            throw new BadRequestException('Lab not found');
+        }
+
+        // If no capacity specified, use lab's effective capacity
+        const defaultCapacity = selectedLab.totalCapacity;
+        const actualProposedCapacity = proposedCapacity ?? defaultCapacity;
+
+        // Calculate total already covered students from existing proposed groups
+        const alreadyCoveredStudents = simulation.proposedGroups.reduce((sum, group) => sum + group.proposedCapacity, 0);
+
+        // Determine students to be covered by this new group
+        const remainingStudents = simulation.totalStudents - alreadyCoveredStudents;
+        const actualCapacityForGroup = Math.min(actualProposedCapacity, remainingStudents);
+
+        // Create new group
+        const newGroup: imports.ProposedGroupDto = {
+            courseGroupId: `temp-${Date.now()}`, // Temporary ID for simulation
+            courseGroupName: `Group ${simulation.proposedGroups.length + 1}`,
+            currentStudentCount: actualCapacityForGroup,
+            maxCapacity: selectedLab.totalCapacity,
+            selectedLabId: labId,
+            selectedLabName: selectedLab.labName,
+            proposedCapacity: actualCapacityForGroup,
+            hasSchedule: false,
+            scheduleDateTime: undefined,
+            isOverCapacity: actualProposedCapacity > selectedLab.totalCapacity
+        };
+
+        // Add the new group to proposed groups
+        const updatedProposedGroups = [...simulation.proposedGroups, newGroup];
+
+        // Update uncovered students
+        const totalCoveredStudents = updatedProposedGroups.reduce((sum, group) => sum + group.proposedCapacity, 0);
+        const uncoveredStudents = Math.max(0, simulation.totalStudents - totalCoveredStudents);
+
+        // Note: We don't reduce lab availability since multiple groups can use the same lab at different times
+
+        return {
+            totalStudents: simulation.totalStudents,
+            requiredGroups: updatedProposedGroups.length,
+            proposedGroups: updatedProposedGroups,
+            uncoveredStudents,
+            canCreateEvent: uncoveredStudents === 0,
+            availableLabs: simulation.availableLabs // Keep original lab availability
+        };
+    }
+
+    /**
+     * Remove a group from the simulation
+     */
+    async removeGroupFromSimulation(courseId: UUID, groupIndex: number): Promise<imports.GroupCreationSimulationDto> {
+        // Get current simulation state
+        const simulation = await this.simulateGroupCreation(courseId);
+
+        if (groupIndex < 0 || groupIndex >= simulation.proposedGroups.length) {
+            throw new BadRequestException('Invalid group index');
+        }
+
+        // Remove the group at the specified index
+        const updatedProposedGroups = simulation.proposedGroups.filter((_, index) => index !== groupIndex);
+
+        // Renumber the remaining groups
+        updatedProposedGroups.forEach((group, index) => {
+            group.courseGroupName = `Group ${index + 1}`;
+        });
+
+        // Update uncovered students
+        const totalCoveredStudents = updatedProposedGroups.reduce((sum, group) => sum + group.proposedCapacity, 0);
+        const uncoveredStudents = Math.max(0, simulation.totalStudents - totalCoveredStudents);
+
+        return {
+            totalStudents: simulation.totalStudents,
+            requiredGroups: updatedProposedGroups.length,
+            proposedGroups: updatedProposedGroups,
+            uncoveredStudents,
+            canCreateEvent: uncoveredStudents === 0,
+            availableLabs: simulation.availableLabs
+        };
+    }
+
+    /**
+     * Create event with complex group scheduling
+     */
+    async createEventWithGroups(createDto: imports.CreateEventWithGroupsDto): Promise<imports.Entity> {
+        console.log('🚀 createEventWithGroups called with DTO:', JSON.stringify(createDto, null, 2));
+        console.log('📋 Proposed groups received:', createDto.proposedGroups);
+        console.log('📊 Number of proposed groups:', createDto.proposedGroups?.length || 0);
+        console.log('🎯 Is exam:', createDto.isExam);
+        console.log('📚 Exam models:', createDto.examModels?.length || 0);
+        console.log('🔗 Group model assignments:', createDto.groupModelAssignments?.length || 0);
+
+        // Create the event first with new structure
+        const event = this.repository.create({
+            name: createDto.name,
+            description: createDto.description,
+            duration: createDto.duration,
+            eventType: createDto.eventType || imports.EventType.ASSIGNMENT,
+            locationType: createDto.locationType || imports.LocationType.ONLINE,
+            customLocation: createDto.customLocation,
+            hasMarks: createDto.hasMarks,
+            totalMarks: createDto.totalMarks,
+            autoStart: createDto.autoStart || false,
+            requiresModels: createDto.requiresModels || false,
+            isExam: createDto.isExam || false,
+            examModeStartMinutes: createDto.examModeStartMinutes || 30,
+            startDateTime: createDto.startDateTime,
+            courseId: createDto.courseId,
+        });
+
+        console.log('📝 Event entity created:', {
+            id: event.id,
+            name: event.name,
+            isExam: event.isExam,
+            requiresModels: event.requiresModels
+        });
+
+        const savedEvent = await this.repository.save(event);
+        console.log('💾 Event saved with ID:', savedEvent.id);
+
+        // Create exam models if this is an exam and models are provided
+        let createdModelIds: string[] = [];
+        if (createDto.isExam && createDto.examModels && createDto.examModels.length > 0) {
+            console.log('📚 Creating exam models with file references...');
+            createdModelIds = await this.createExamModelsWithFileIds(savedEvent.id, createDto.examModels);
+            console.log('✅ Created exam models:', createdModelIds);
+        }
+
+        // Create groups and schedules from proposed groups
+        if (createDto.proposedGroups && createDto.proposedGroups.length > 0) {
+            console.log('🎯 Processing proposed groups...');
+
+            // Call the existing method to create all groups from proposal
+            await this.createGroupsFromProposal(savedEvent.id, createDto.courseId, createDto.proposedGroups);
+            console.log('🎉 All groups processed successfully');
+
+            // Assign models to groups if this is an exam and assignments are provided
+            if (createDto.isExam && createDto.groupModelAssignments && createDto.groupModelAssignments.length > 0) {
+                console.log('🔗 Assigning models to groups...');
+                await this.assignModelsToGroups(savedEvent.id, createDto.groupModelAssignments, createdModelIds);
+                console.log('✅ Model assignments completed');
+            }
+        } else {
+            console.log('⚠️ No proposed groups provided');
+        }
+
+        console.log('✨ createEventWithGroups completed successfully');
+        return savedEvent;
+    }
+
+    /**
+     * Upload exam model files independently and return file IDs
+     */
+    async uploadExamModelFiles(files: Express.Multer.File[]): Promise<imports.UploadExamModelFilesResponseDto> {
+        this.logger.log(`📁 Uploading ${files.length} exam model files`);
+
+        const uploadedFiles = [];
+
+        for (const file of files) {
+            this.logger.log(`📎 Processing file: ${file.originalname} (${file.size} bytes, ${file.mimetype})`);
+
+            try {
+                // Upload file using FileService to MinIO
+                const uploadResult = await this.fileService.uploadFile(file, {
+                    prefix: 'exam-models',
+                    isPublic: false
+                });
+
+                uploadedFiles.push({
+                    id: uploadResult.id.toString(), // Convert number ID to string for frontend
+                    originalName: uploadResult.originalname,
+                    size: uploadResult.size,
+                    mimeType: uploadResult.mimetype
+                });
+
+                this.logger.log(`✅ Successfully uploaded file: ${file.originalname} with ID: ${uploadResult.id}`);
+            } catch (error) {
+                this.logger.error(`❌ Failed to upload file ${file.originalname}: ${error.message}`);
+                throw error;
+            }
+        }
+
+        this.logger.log(`✅ Successfully processed ${uploadedFiles.length} files`);
+        return { uploadedFiles };
+    }
+
+    /**
+     * Create groups from proposals and assign students
+     */
+    private async createGroupsFromProposal(
+        eventId: UUID,
+        courseId: UUID,
+        proposedGroups: imports.ProposedGroupSimpleDto[]
+    ): Promise<void> {
+        this.logger.log(`Creating groups from proposal for event ${eventId}, course ${courseId}, ${proposedGroups.length} groups`);
+
+        // Get the event to check if it's an exam
+        const event = await this.repository.findOne({ where: { id: eventId } });
+        const isExam = event?.isExam || false;
+
+        // Get all students enrolled in the course, ordered alphabetically
+        const students = await this.userRepository
+            .createQueryBuilder('user')
+            .leftJoin('student_courses', 'sc', 'sc.student_id = user.id')
+            .leftJoin('students', 'student', 'student.id = user.id')
+            .addSelect(['student.seatNo'])
+            .where('sc.course_id = :courseId', { courseId })
+            .orderBy('user.name', 'ASC')
+            .getMany();
+
+        this.logger.log(`Found ${students.length} students enrolled in course ${courseId}`);
+
+        let studentIndex = 0;
+
+        // Create event schedules and exam groups for each proposed group
+        for (let i = 0; i < proposedGroups.length; i++) {
+            const group = proposedGroups[i];
+            this.logger.log(`Creating group ${i + 1}: labId=${group.labId}, capacity=${group.proposedCapacity}, autoStart=${group.autoStart}`);
+
+            // Create event schedule with autoStart from group
+            const eventSchedule = this.eventScheduleRepository.create({
+                eventId: eventId,
+                labId: group.labId,
+                dateTime: new Date(group.dateTime), // Use actual dateTime from group
+                maxStudents: group.proposedCapacity,
+                enrolledStudents: 0,
+                autoStart: group.autoStart || false, // Use autoStart from the group
+                assistantId: group.assistantIds[0] || null // Use first assistant ID (for now, we'll need to update the schema to support multiple assistants)
+            });
+
+            const savedSchedule = await this.eventScheduleRepository.save(eventSchedule);
+            this.logger.log(`Created event schedule with ID: ${savedSchedule.id}`);
+
+            // If this is an exam, create an ExamGroup record
+            if (isExam) {
+                // Find or create a course group for this lab (we'll use a default course group for now)
+                // In a real scenario, you might want to map labs to specific course groups
+                const defaultCourseGroup = await this.courseGroupRepository.findOne({
+                    where: { courseId: courseId, isDefault: true }
+                });
+
+                if (defaultCourseGroup) {
+                    const examGroup = this.examGroupRepository.create({
+                        eventId: eventId,
+                        courseGroupId: defaultCourseGroup.id,
+                        groupNumber: i + 1,
+                        expectedStudentCount: group.proposedCapacity,
+                        actualStudentCount: 0,
+                        notes: `Lab ID: ${group.labId}`
+                    });
+
+                    const savedExamGroup = await this.examGroupRepository.save(examGroup);
+                    this.logger.log(`Created exam group with ID: ${savedExamGroup.id} for group ${i + 1}`);
+
+                    // Link the event schedule to the exam group
+                    await this.eventScheduleRepository.update(savedSchedule.id, {
+                        examGroupId: savedExamGroup.id
+                    });
+                }
+            }
+
+            // Assign students to this schedule
+            const studentsForThisGroup = students.slice(studentIndex, studentIndex + group.proposedCapacity);
+            this.logger.log(`Assigning ${studentsForThisGroup.length} students to group ${i + 1}`);
+
+            for (const student of studentsForThisGroup) {
+                const studentSchedule = this.studentEventScheduleRepository.create({
+                    eventSchedule_id: savedSchedule.id,
+                    student_id: student.id,
+                    isInExamMode: false,
+                    hasAttended: false
+                });
+
+                await this.studentEventScheduleRepository.save(studentSchedule);
+            }
+
+            // Update enrolled student count
+            await this.eventScheduleRepository.update(savedSchedule.id, {
+                enrolledStudents: studentsForThisGroup.length
+            });
+
+            // Update exam group actual student count if it's an exam
+            if (isExam) {
+                const examGroup = await this.examGroupRepository.findOne({
+                    where: { eventId: eventId, groupNumber: i + 1 }
+                });
+                if (examGroup) {
+                    await this.examGroupRepository.update(examGroup.id, {
+                        actualStudentCount: studentsForThisGroup.length
+                    });
+                }
+            }
+
+            this.logger.log(`Updated enrolled student count to ${studentsForThisGroup.length} for schedule ${savedSchedule.id}`);
+
+            studentIndex += group.proposedCapacity;
+        }
+
+        this.logger.log(`Completed creating ${proposedGroups.length} groups for event ${eventId}`);
+    }
+
+    /**
+     * Create exam models for an event
+     */
+    private async createExamModelsForEvent(eventId: UUID, examModels: imports.ExamModelForEventDto[]): Promise<string[]> {
+        // For now, return empty array as we'll implement this when we have the exam model system ready
+        this.logger.log(`Creating ${examModels.length} exam models for event ${eventId}`);
+        return [];
+    }
+
+    /**
+     * Create exam models from uploaded files
+     */
+    private async createExamModelsFromFiles(
+        eventId: UUID,
+        examModelFiles: Express.Multer.File[],
+        examModelData?: imports.ExamModelForEventDto[]
+    ): Promise<string[]> {
+        this.logger.log(`Creating exam models from ${examModelFiles.length} uploaded files for event ${eventId}`);
+
+        // Group files by model name (from form data)
+        const filesByModel = new Map<string, Express.Multer.File[]>();
+
+        // If we have exam model data from the form, use it to organize files
+        if (examModelData && examModelData.length > 0) {
+            examModelData.forEach((model, index) => {
+                filesByModel.set(model.name, []);
+            });
+
+            // Assign files to models based on naming convention or order
+            examModelFiles.forEach((file, index) => {
+                const modelIndex = Math.floor(index / Math.max(1, Math.floor(examModelFiles.length / examModelData.length)));
+                const modelName = examModelData[modelIndex]?.name || `Model ${String.fromCharCode(65 + modelIndex)}`;
+
+                if (!filesByModel.has(modelName)) {
+                    filesByModel.set(modelName, []);
+                }
+                filesByModel.get(modelName)!.push(file);
+            });
+        } else {
+            // Create models based on file grouping (A, B, C, etc.)
+            examModelFiles.forEach((file, index) => {
+                const modelLetter = String.fromCharCode(65 + Math.floor(index / Math.max(1, Math.floor(examModelFiles.length / 4)))); // Assume max 4 models
+                const modelName = `Model ${modelLetter}`;
+
+                if (!filesByModel.has(modelName)) {
+                    filesByModel.set(modelName, []);
+                }
+                filesByModel.get(modelName)!.push(file);
+            });
+        }
+
+        const createdModelIds: string[] = [];
+
+        // Create exam models (placeholder - implement actual exam model creation when ready)
+        for (const [modelName, files] of filesByModel.entries()) {
+            this.logger.log(`Creating model "${modelName}" with ${files.length} files`);
+
+            // TODO: Implement actual exam model creation with MinIO file upload
+            // For now, just log the file details
+            files.forEach(file => {
+                this.logger.log(`- File: ${file.originalname} (${file.size} bytes, ${file.mimetype})`);
+            });
+
+            // Generate a placeholder model ID
+            const modelId = `${eventId}-${modelName.toLowerCase().replace(' ', '-')}`;
+            createdModelIds.push(modelId);
+        }
+
+        return createdModelIds;
+    }
+
+    /**
+     * Assign models to groups
+     */
+    private async assignModelsToGroups(eventId: UUID, assignments: imports.GroupModelAssignmentDto[], modelIds: string[]): Promise<void> {
+        this.logger.log(`🔗 Assigning models to ${assignments.length} groups for event ${eventId}`);
+
+        // Get all exam groups for this event
+        const examGroups = await this.examGroupRepository.find({
+            where: { eventId: eventId },
+            order: { groupNumber: 'ASC' }
+        });
+
+        if (examGroups.length === 0) {
+            this.logger.warn(`⚠️ No exam groups found for event ${eventId}`);
+            return;
+        }
+
+        // Get all exam models for this event
+        const examModels = await this.examModelRepository.find({
+            where: { eventId: eventId }
+        });
+
+        if (examModels.length === 0) {
+            this.logger.warn(`⚠️ No exam models found for event ${eventId}`);
+            return;
+        }
+
+        this.logger.log(`📊 Found ${examGroups.length} exam groups and ${examModels.length} exam models`);
+
+        // Process each assignment
+        for (const assignment of assignments) {
+            const groupIndex = assignment.groupIndex;
+            const modelNames = assignment.assignedModelNames;
+
+            // Get the exam group for this assignment (groups are 0-indexed in assignment, but groupNumber is 1-indexed)
+            const examGroup = examGroups.find(group => group.groupNumber === groupIndex + 1);
+
+            if (!examGroup) {
+                this.logger.error(`❌ Exam group not found for group index ${groupIndex} (group number ${groupIndex + 1})`);
+                continue;
+            }
+
+            this.logger.log(`🎯 Processing assignment for group ${groupIndex + 1} (ID: ${examGroup.id}): models [${modelNames.join(', ')}]`);
+
+            // Find exam models by name
+            const modelsToAssign = examModels.filter(model => modelNames.includes(model.name));
+
+            if (modelsToAssign.length === 0) {
+                this.logger.warn(`⚠️ No exam models found matching names [${modelNames.join(', ')}] for group ${groupIndex + 1}`);
+                continue;
+            }
+
+            this.logger.log(`✅ Found ${modelsToAssign.length} models to assign to group ${groupIndex + 1}: [${modelsToAssign.map(m => m.name).join(', ')}]`);
+
+            // Assign models to the exam group using the ManyToMany relationship
+            try {
+                // Load the current assigned models
+                const currentModels = await examGroup.assignedModels;
+
+                // Add new models to the existing ones (avoid duplicates)
+                const newModels = modelsToAssign.filter(newModel =>
+                    !currentModels.some(existing => existing.id === newModel.id)
+                );
+
+                if (newModels.length > 0) {
+                    // Update the relationship
+                    const allModels = [...currentModels, ...newModels];
+
+                    // Use query builder to update the junction table
+                    await this.examGroupRepository
+                        .createQueryBuilder()
+                        .relation(ExamGroup, 'assignedModels')
+                        .of(examGroup.id)
+                        .add(newModels.map(model => model.id));
+
+                    this.logger.log(`✅ Successfully assigned ${newModels.length} new models to group ${groupIndex + 1}`);
+                } else {
+                    this.logger.log(`ℹ️ All specified models already assigned to group ${groupIndex + 1}`);
+                }
+            } catch (error) {
+                this.logger.error(`❌ Failed to assign models to group ${groupIndex + 1}: ${error.message}`);
+                throw error;
+            }
+        }
+
+        this.logger.log(`🎉 Completed model assignments for event ${eventId}`);
+    }
+
+    /**
+     * Assign students to groups lexicographically (by name)
+     */
+    private async assignStudentsLexicographically(eventId: UUID, courseId: UUID): Promise<void> {
+        // Get all students enrolled in the course, ordered alphabetically
+        const students = await this.userRepository
+            .createQueryBuilder('user')
+            .leftJoin('student_courses', 'sc', 'sc.student_id = user.id')
+            .leftJoin('students', 'student', 'student.id = user.id')
+            .addSelect(['student.seatNo'])
+            .where('sc.course_id = :courseId', { courseId })
+            .orderBy('user.name', 'ASC')
+            .getMany();
+
+        // Get all event schedules for this event
+        const eventSchedules = await this.eventScheduleRepository.find({
+            where: { eventId },
+            order: { dateTime: 'ASC' }
+        });
+
+        // Distribute students evenly across schedules
+        let scheduleIndex = 0;
+        for (const student of students) {
+            const targetSchedule = eventSchedules[scheduleIndex % eventSchedules.length];
+
+            // Create student event schedule entry
+            const studentSchedule = this.studentEventScheduleRepository.create({
+                eventSchedule_id: targetSchedule.id,
+                student_id: student.id,
+                isInExamMode: false,
+                hasAttended: false
+            });
+
+            await this.studentEventScheduleRepository.save(studentSchedule);
+            scheduleIndex++;
+        }
+
+        // Update enrolled student counts
+        for (const schedule of eventSchedules) {
+            const enrolledCount = await this.studentEventScheduleRepository.count({
+                where: { eventSchedule_id: schedule.id }
+            });
+            await this.eventScheduleRepository.update(schedule.id, { enrolledStudents: enrolledCount });
+        }
+    }
+
+    /**
+     * Move student between groups
+     */
+    async moveStudentBetweenGroups(moveDto: imports.MoveStudentBetweenGroupsDto): Promise<{ success: boolean; message: string }> {
+        // Validate source group has the student
+        const sourceEnrollment = await this.userRepository
+            .createQueryBuilder('user')
+            .leftJoin('student_courses', 'sc', 'sc.student_id = user.id')
+            .where('sc.student_id = :studentId', { studentId: moveDto.studentId })
+            .andWhere('sc.course_group_id = :fromGroupId', { fromGroupId: moveDto.fromCourseGroupId })
+            .andWhere('sc.course_id = :courseId', { courseId: moveDto.courseId })
+            .getOne();
+
+        if (!sourceEnrollment) {
+            throw new BadRequestException('Student is not enrolled in the source group');
+        }
+
+        // Check target group capacity
+        const targetGroup = await this.courseGroupRepository.findOne({
+            where: { id: moveDto.toCourseGroupId },
+            relations: ['lab']
+        });
+
+        if (!targetGroup) {
+            throw new BadRequestException('Target group not found');
+        }
+
+        const targetGroupCurrentCount = await this.userRepository
+            .createQueryBuilder('user')
+            .leftJoin('student_courses', 'sc', 'sc.student_id = user.id')
+            .where('sc.course_group_id = :groupId', { groupId: moveDto.toCourseGroupId })
+            .getCount();
+
+        const lab = await targetGroup.lab;
+        const maxCapacity = Math.min(targetGroup.capacity || Infinity, lab?.capacity || Infinity);
+
+        if (targetGroupCurrentCount >= maxCapacity) {
+            throw new BadRequestException(`Target group is at full capacity (${maxCapacity})`);
+        }
+
+        // Update student course enrollment
+        await this.userRepository.manager.query(
+            `UPDATE student_courses SET course_group_id = $1 WHERE student_id = $2 AND course_id = $3`,
+            [moveDto.toCourseGroupId, moveDto.studentId, moveDto.courseId]
+        );
+
+        return {
+            success: true,
+            message: 'Student moved successfully between groups'
+        };
+    }
+
+    /**
+     * Get student grades summary for a course
+     */
+    async getStudentGradesSummary(courseId: UUID): Promise<imports.StudentGradesSummaryDto[]> {
+        // Get all students enrolled in the course
+        const students = await this.userRepository
+            .createQueryBuilder('user')
+            .leftJoin('student_courses', 'sc', 'sc.student_id = user.id')
+            .leftJoin('students', 'student', 'student.id = user.id')
+            .addSelect(['student.seatNo'])
+            .where('sc.course_id = :courseId', { courseId })
+            .orderBy('user.name', 'ASC')
+            .getMany();
+
+        const gradesSummary: imports.StudentGradesSummaryDto[] = [];
+
+        for (const student of students) {
+            // Get all event marks for this student in this course
+            const eventMarks = await this.studentEventScheduleRepository
+                .createQueryBuilder('ses')
+                .leftJoin('event_schedules', 'es', 'es.id = ses.eventSchedule_id')
+                .leftJoin('events', 'event', 'event.id = es.event_id')
+                .select([
+                    'event.id as eventId',
+                    'event.name as eventName',
+                    'event.hasMarks as hasMarks',
+                    'event.totalMarks as totalMarks',
+                    'ses.eventSchedule_id as eventScheduleId',
+                    'ses.mark as mark',
+                    'ses.hasAttended as hasAttended',
+                    'es.dateTime as dateTime'
+                ])
+                .where('ses.student_id = :studentId', { studentId: student.id })
+                .andWhere('event.courseId = :courseId', { courseId })
+                .andWhere('event.hasMarks = :hasMarks', { hasMarks: true })
+                .orderBy('es.dateTime', 'ASC')
+                .getRawMany();
+
+            let totalMarks = 0;
+            let earnedMarks = 0;
+
+            const eventMarkDtos: imports.EventMarkDto[] = eventMarks.map(mark => {
+                const markValue = mark.mark || 0;
+                const totalValue = mark.totalMarks || 0;
+
+                totalMarks += totalValue;
+                earnedMarks += markValue;
+
+                return {
+                    eventId: mark.eventId,
+                    eventName: mark.eventName,
+                    eventScheduleId: mark.eventScheduleId,
+                    mark: markValue,
+                    totalMarks: totalValue,
+                    percentage: totalValue > 0 ? (markValue / totalValue) * 100 : 0,
+                    hasAttended: mark.hasAttended || false,
+                    dateTime: mark.dateTime
+                };
+            });
+
+            const studentData = await this.userRepository
+                .createQueryBuilder('user')
+                .leftJoin('students', 'student', 'student.id = user.id')
+                .addSelect(['student.seatNo'])
+                .where('user.id = :studentId', { studentId: student.id })
+                .getRawOne();
+
+            gradesSummary.push({
+                studentId: student.id,
+                studentName: student.name,
+                username: student.username,
+                seatNo: studentData?.student_seatNo || '',
+                totalMarks,
+                earnedMarks,
+                percentage: totalMarks > 0 ? (earnedMarks / totalMarks) * 100 : 0,
+                eventMarks: eventMarkDtos
+            });
+        }
+
+        return gradesSummary;
+    }
+
+    /**
+     * Get my grades (for student dashboard)
+     */
+    async getMyGrades(studentId: UUID): Promise<imports.StudentGradesSummaryDto[]> {
+        // Get all courses the student is enrolled in
+        const enrolledCourses = await this.userRepository
+            .createQueryBuilder('user')
+            .leftJoin('student_courses', 'sc', 'sc.student_id = user.id')
+            .leftJoin('courses', 'course', 'course.id = sc.course_id')
+            .select(['course.id', 'course.name'])
+            .where('user.id = :studentId', { studentId })
+            .getRawMany();
+
+        const allGrades: imports.StudentGradesSummaryDto[] = [];
+
+        for (const course of enrolledCourses) {
+            const courseGrades = await this.getStudentGradesSummary(course.course_id);
+            const myGrades = courseGrades.find(g => g.studentId === studentId);
+            if (myGrades) {
+                allGrades.push(myGrades);
+            }
+        }
+
+        return allGrades;
+    }
+
+    /**
+     * Create exam models with file IDs (files already uploaded)
+     */
+    private async createExamModelsWithFileIds(eventId: UUID, examModels: imports.ExamModelForEventDto[]): Promise<string[]> {
+        this.logger.log(`Creating ${examModels.length} exam models with file IDs for event ${eventId}`);
+
+        const createdModelIds: string[] = [];
+
+        for (let i = 0; i < examModels.length; i++) {
+            const model = examModels[i];
+            this.logger.log(`Creating model "${model.name}" with ${model.fileIds?.length || 0} file references`);
+
+            try {
+                // Create the exam model entity
+                const version = String.fromCharCode(65 + i); // A, B, C, D...
+
+                const examModel = this.examModelRepository.create({
+                    name: model.name,
+                    version: version,
+                    description: model.description,
+                    eventId: eventId,
+                    assignedStudentCount: 0,
+                    isActive: true,
+                });
+
+                const savedModel = await this.examModelRepository.save(examModel);
+                this.logger.log(`Created exam model: ${savedModel.id} (${savedModel.name} - Version ${savedModel.version})`);
+
+                // Create file references for uploaded files
+                if (model.fileIds && model.fileIds.length > 0) {
+                    this.logger.log(`Linking ${model.fileIds.length} files to exam model ${savedModel.id}`);
+
+                    for (const fileId of model.fileIds) {
+                        try {
+                            // Get the uploaded file record - parse as number since file IDs are numbers
+                            const uploadedFile = await this.fileService.getFileById(parseInt(fileId));
+                            if (uploadedFile) {
+                                // Create exam model file record
+                                const examModelFile = this.examModelFileRepository.create({
+                                    fileName: uploadedFile.filename,
+                                    originalFileName: uploadedFile.originalname,
+                                    filePath: uploadedFile.url || uploadedFile.objectName,
+                                    fileSize: uploadedFile.size,
+                                    mimeType: uploadedFile.mimetype,
+                                    examModelId: savedModel.id,
+                                });
+
+                                await this.examModelFileRepository.save(examModelFile);
+                                this.logger.log(`- Linked file ${fileId} (${uploadedFile.originalname}) to model ${savedModel.id}`);
+                            } else {
+                                this.logger.error(`File with ID ${fileId} not found`);
+                            }
+                        } catch (fileError) {
+                            this.logger.error(`Failed to link file ${fileId} to model ${savedModel.id}: ${fileError.message}`);
+                        }
+                    }
+                }
+
+                createdModelIds.push(savedModel.id);
+            } catch (error) {
+                this.logger.error(`Failed to create exam model "${model.name}": ${error.message}`);
+                throw error;
+            }
+        }
+
+        this.logger.log(`Successfully created ${createdModelIds.length} exam models for event ${eventId}`);
+        return createdModelIds;
+    }
 }

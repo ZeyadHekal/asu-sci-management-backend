@@ -11,6 +11,7 @@ export {
 	CourseGroupListDto as GetListDto,
 	CourseGroupPagedDto as PagedDto,
 	CourseGroupPaginationInput as PaginationInput,
+	LabCapacityDto,
 } from './dtos';
 
 export { CourseGroup as Entity };
@@ -35,4 +36,4 @@ export { UUID } from 'crypto';
 export { PrivilegeCode } from 'src/db-seeder/data/privileges';
 export { RequirePrivileges } from 'src/privileges/guard/decorator';
 export { BaseController } from 'src/base/base.controller';
-export { ApiResponse, ApiOperation, ApiTags, ApiParam } from '@nestjs/swagger';
+export { ApiResponse, ApiOperation, ApiTags, ApiParam, ApiBody } from '@nestjs/swagger';

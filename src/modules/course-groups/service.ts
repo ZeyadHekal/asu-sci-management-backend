@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import * as imports from './imports';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In, Not } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { BaseService } from 'src/base/base.service';
 import { Course } from 'src/database/courses/course.entity';
@@ -37,6 +37,11 @@ export class CourseGroupService extends BaseService<imports.Entity, imports.Crea
 			throw new BadRequestException('Course not found!');
 		}
 
+		// Prevent assigning labs to default groups
+		if (dto.isDefault && dto.labId) {
+			throw new BadRequestException('Default groups cannot be assigned to labs!');
+		}
+
 		// Validate lab exists (only if labId is provided)
 		if (dto.labId) {
 			const lab = await this.labRepository.findOneBy({ id: dto.labId });
@@ -45,12 +50,22 @@ export class CourseGroupService extends BaseService<imports.Entity, imports.Crea
 			}
 		}
 
-		// Validate order uniqueness within course
-		const existingGroup = await this.repository.findOne({
-			where: { courseId: dto.courseId, order: dto.order },
-		});
-		if (existingGroup) {
-			throw new BadRequestException('Course group with this order already exists for this course!');
+		// If creating a default group, set order to 999 for lowest priority
+		if (dto.isDefault) {
+			dto.order = 999;
+		} else {
+			// For non-default groups, validate order uniqueness
+			const existingGroup = await this.repository.findOne({
+				where: { courseId: dto.courseId, order: dto.order },
+			});
+			if (existingGroup) {
+				throw new BadRequestException('Course group with this order already exists for this course!');
+			}
+
+			// Ensure non-default groups have reasonable order values (1-998)
+			if (dto.order < 1 || dto.order >= 999) {
+				throw new BadRequestException('Group order must be between 1 and 998!');
+			}
 		}
 
 		return dto;
@@ -66,6 +81,49 @@ export class CourseGroupService extends BaseService<imports.Entity, imports.Crea
 		return this.getById(courseGroup.id);
 	}
 
+	/**
+	 * Calculate lab capacity for a specific course based on software requirements
+	 */
+	async calculateLabCapacityForCourse(labId: imports.UUID, courseId: imports.UUID): Promise<number> {
+		// Get course software requirements
+		const course = await this.courseRepository.findOneBy({ id: courseId });
+		if (!course) {
+			return 0;
+		}
+
+		const courseSoftwares = await course.softwares;
+		const courseSoftwareIds = courseSoftwares.map((software) => software.id);
+
+		if (courseSoftwareIds.length === 0) {
+			// If no software requirements, capacity is based on available devices only
+			const labDevices = await this.deviceRepository.count({
+				where: { labId, status: 'available' },
+			});
+			return labDevices;
+		}
+
+		// Find devices in the lab that are available and have all required software available
+		const devicesWithAllSoftware = await this.deviceRepository
+			.createQueryBuilder('device')
+			.where('device.labId = :labId', { labId })
+			.andWhere('device.status = :deviceStatus', { deviceStatus: 'available' })
+			.andWhere((qb: any) => {
+				const subQuery = qb
+					.subQuery()
+					.select('COUNT(DISTINCT ds.softwareId)')
+					.from(DeviceSoftware, 'ds')
+					.where('ds.deviceId = device.id')
+					.andWhere('ds.status = :softwareStatus', { softwareStatus: 'available' })
+					.andWhere('ds.softwareId IN (:...softwareIds)', { softwareIds: courseSoftwareIds })
+					.getQuery();
+				return `(${subQuery}) = :requiredCount`;
+			})
+			.setParameter('requiredCount', courseSoftwareIds.length)
+			.getCount();
+
+		return devicesWithAllSoftware;
+	}
+
 	private async calculateGroupCapacity(groupId: imports.UUID): Promise<number> {
 		const courseGroup = await this.repository.findOneBy({ id: groupId });
 		if (!courseGroup) {
@@ -77,43 +135,8 @@ export class CourseGroupService extends BaseService<imports.Entity, imports.Crea
 			return 0;
 		}
 
-		// Get course software requirements
-		const course = await this.courseRepository.findOneBy({ id: courseGroup.courseId });
-		if (!course) {
-			return 0;
-		}
-
-		const courseSoftwares = await course.softwares;
-		const courseSoftwareIds = courseSoftwares.map((software) => software.id);
-
-		if (courseSoftwareIds.length === 0) {
-			// If no software requirements, capacity is based on lab devices only
-			const labDevices = await this.deviceRepository.count({
-				where: { labId: courseGroup.labId },
-			});
-			return labDevices;
-		}
-
-		// Find devices in the lab that have all required software with no issues
-		const devicesWithAllSoftware = await this.deviceRepository
-			.createQueryBuilder('device')
-			.where('device.labId = :labId', { labId: courseGroup.labId })
-			.andWhere('device.hasIssue = false')
-			.andWhere((qb) => {
-				const subQuery = qb
-					.subQuery()
-					.select('COUNT(DISTINCT ds.softwareId)')
-					.from(DeviceSoftware, 'ds')
-					.where('ds.deviceId = device.id')
-					.andWhere('ds.hasIssue = false')
-					.andWhere('ds.softwareId IN (:...softwareIds)', { softwareIds: courseSoftwareIds })
-					.getQuery();
-				return `(${subQuery}) = :requiredCount`;
-			})
-			.setParameter('requiredCount', courseSoftwareIds.length)
-			.getCount();
-
-		return devicesWithAllSoftware;
+		// Use the new reusable calculation function
+		return this.calculateLabCapacityForCourse(courseGroup.labId, courseGroup.courseId);
 	}
 
 	async getPaginated(input: imports.PaginationInput): Promise<imports.IPaginationOutput<imports.GetDto | imports.GetListDto>> {
@@ -205,6 +228,11 @@ export class CourseGroupService extends BaseService<imports.Entity, imports.Crea
 					where: { courseGroupId: courseGroup.id },
 				});
 
+				// Calculate live capacity instead of using stored value
+				const liveCapacity = courseGroup.labId
+					? await this.calculateLabCapacityForCourse(courseGroup.labId, courseGroup.courseId)
+					: 0;
+
 				// Get schedule details with proper relations
 				const schedules = await this.scheduleRepository.find({
 					where: { courseGroupId: courseGroup.id },
@@ -224,13 +252,13 @@ export class CourseGroupService extends BaseService<imports.Entity, imports.Crea
 
 				return transformToInstance(CourseGroupScheduleTableDto, {
 					id: courseGroup.id,
-					groupName: `Group ${String.fromCharCode(64 + courseGroup.order)}`, // A, B, C, etc.
+					groupName: courseGroup.isDefault ? 'No Group' : `Group ${String.fromCharCode(64 + courseGroup.order)}`, // A, B, C, etc.
 					labName: lab?.name || 'No Lab Assigned',
 					weekDay: schedule?.weekDay || 'Not Scheduled',
 					timeSlot: schedule ? `${schedule.startTime} - ${schedule.endTime}` : 'Not Scheduled',
 					teachingAssistants: assistantNames,
 					currentEnrollment,
-					totalCapacity: courseGroup.capacity || 0,
+					totalCapacity: liveCapacity, // Use live calculated capacity
 					labId: courseGroup.labId || null,
 					courseId: courseGroup.courseId,
 					isDefault: courseGroup.isDefault,
@@ -302,5 +330,462 @@ export class CourseGroupService extends BaseService<imports.Entity, imports.Crea
 		if (result.affected === 0) {
 			throw new BadRequestException('Schedule not found!');
 		}
+	}
+
+	async update(id: imports.UUID, updateDto: imports.UpdateDto): Promise<imports.GetDto> {
+		const existingGroup = await this.repository.findOneBy({ id });
+		if (!existingGroup) {
+			throw new BadRequestException('Course group not found!');
+		}
+
+		// Prevent modifying default group properties that should be restricted
+		if (existingGroup.isDefault) {
+			if (updateDto.labId !== undefined) {
+				throw new BadRequestException('Default groups cannot be assigned to labs!');
+			}
+			if (updateDto.isDefault === false) {
+				throw new BadRequestException('Cannot change default group to non-default!');
+			}
+		}
+
+		// If changing order for non-default group, validate constraints
+		if (updateDto.order !== undefined && !existingGroup.isDefault) {
+			// Ensure non-default groups have reasonable order values (1-998)
+			if (updateDto.order < 1 || updateDto.order >= 999) {
+				throw new BadRequestException('Group order must be between 1 and 998!');
+			}
+		}
+
+		// If updating order for default group, keep it at 999
+		if (updateDto.order !== undefined && existingGroup.isDefault) {
+			updateDto.order = 999;
+		}
+
+		const result = await super.update(id, updateDto);
+
+		// Recalculate capacity if lab was changed
+		if (updateDto.labId !== undefined) {
+			const capacity = await this.calculateGroupCapacity(id);
+			await this.repository.update(id, { capacity });
+		}
+
+		return this.getById(id);
+	}
+
+	async delete(ids: imports.UUID[]): Promise<imports.DeleteDto> {
+		// Check if any of the groups to be deleted are default groups
+		const defaultGroups = await this.repository.find({
+			where: { id: In(ids), isDefault: true },
+		});
+
+		if (defaultGroups.length > 0) {
+			throw new BadRequestException('Cannot delete default groups!');
+		}
+
+		return super.delete(ids);
+	}
+
+	async getStudentsInDefaultGroup(courseId: imports.UUID): Promise<number> {
+		const defaultGroup = await this.repository.findOne({
+			where: { courseId, isDefault: true },
+		});
+
+		if (!defaultGroup) {
+			return 0;
+		}
+
+		return this.studentCoursesRepository.count({
+			where: { courseGroupId: defaultGroup.id },
+		});
+	}
+
+	async getAvailableDevicesForLab(labId: imports.UUID, courseId: imports.UUID): Promise<imports.LabCapacityDto> {
+		// Get course software requirements
+		const course = await this.courseRepository.findOneBy({ id: courseId });
+		if (!course) {
+			throw new BadRequestException('Course not found!');
+		}
+
+		const courseSoftwares = await course.softwares;
+		const courseSoftwareIds = courseSoftwares.map((software) => software.id);
+		const requiredSoftware = courseSoftwares.map((software) => software.name);
+
+		// Get total devices in lab
+		const totalDevices = await this.deviceRepository.count({
+			where: { labId },
+		});
+
+		if (courseSoftwareIds.length === 0) {
+			// If no software requirements, available devices are all available (status = 'available') devices
+			const availableDevices = await this.deviceRepository.count({
+				where: { labId, status: 'available' },
+			});
+
+			return transformToInstance(imports.LabCapacityDto, {
+				availableDevices,
+				totalDevices,
+				requiredSoftware,
+			});
+		}
+
+		// Find devices in the lab that are available and have all required software available
+		const availableDevices = await this.deviceRepository
+			.createQueryBuilder('device')
+			.where('device.labId = :labId', { labId })
+			.andWhere('device.status = :deviceStatus', { deviceStatus: 'available' })
+			.andWhere((qb) => {
+				const subQuery = qb
+					.subQuery()
+					.select('COUNT(DISTINCT ds.softwareId)')
+					.from(DeviceSoftware, 'ds')
+					.where('ds.deviceId = device.id')
+					.andWhere('ds.status = :softwareStatus', { softwareStatus: 'available' })
+					.andWhere('ds.softwareId IN (:...softwareIds)', { softwareIds: courseSoftwareIds })
+					.getQuery();
+				return `(${subQuery}) = :requiredCount`;
+			})
+			.setParameter('requiredCount', courseSoftwareIds.length)
+			.getCount();
+
+		return transformToInstance(imports.LabCapacityDto, {
+			availableDevices,
+			totalDevices,
+			requiredSoftware,
+		});
+	}
+
+	async getAssistantGroups(assistantId: imports.UUID, courseId: imports.UUID): Promise<CourseGroupScheduleTableDto[]> {
+		// Get all course groups where the assistant has schedules for the given course
+		const schedules = await this.scheduleRepository
+			.createQueryBuilder('schedule')
+			.leftJoinAndSelect('schedule.courseGroup', 'courseGroup')
+			.leftJoinAndSelect('courseGroup.lab', 'lab')
+			.leftJoinAndSelect('schedule.assistant', 'assistant')
+			.where('schedule.assistantId = :assistantId', { assistantId })
+			.andWhere('schedule.courseId = :courseId', { courseId })
+			.orderBy('courseGroup.order', 'ASC')
+			.getMany();
+
+		// Group schedules by course group
+		const groupedSchedules = schedules.reduce((acc, schedule) => {
+			const groupId = schedule.courseGroupId;
+			if (!acc[groupId]) {
+				acc[groupId] = [];
+			}
+			acc[groupId].push(schedule);
+			return acc;
+		}, {} as { [key: string]: any[] });
+
+		const items = await Promise.all(
+			Object.entries(groupedSchedules).map(async ([groupId, groupSchedules]) => {
+				const firstSchedule = groupSchedules[0];
+				const courseGroup = await firstSchedule.courseGroup;
+				const lab = courseGroup.labId ? await courseGroup.lab : null;
+
+				// Get current enrollment for this group
+				const currentEnrollment = await this.studentCoursesRepository.count({
+					where: { courseGroupId: groupId as imports.UUID },
+				});
+
+				// Get all assistants for this group
+				const allSchedulesForGroup = await this.scheduleRepository.find({
+					where: { courseGroupId: groupId as imports.UUID },
+					relations: ['assistant'],
+				});
+
+				const assistantNames = await Promise.all(
+					allSchedulesForGroup.map(async (s) => {
+						const assistant = await s.assistant;
+						return assistant.name;
+					}),
+				);
+
+				return transformToInstance(CourseGroupScheduleTableDto, {
+					id: courseGroup.id,
+					groupName: courseGroup.isDefault ? 'No Group' : `Group ${String.fromCharCode(64 + courseGroup.order)}`, // A, B, C, etc.
+					labName: lab?.name || 'No Lab Assigned',
+					weekDay: firstSchedule.weekDay || 'Not Scheduled',
+					timeSlot: `${firstSchedule.startTime} - ${firstSchedule.endTime}`,
+					teachingAssistants: assistantNames,
+					currentEnrollment,
+					totalCapacity: courseGroup.capacity || 0,
+					labId: courseGroup.labId || null,
+					courseId: courseGroup.courseId,
+					isDefault: courseGroup.isDefault,
+				});
+			}),
+		);
+
+		return items;
+	}
+
+	async reorderGroups(courseId: imports.UUID, groupIds: imports.UUID[]): Promise<any> {
+		// Get all groups for this course
+		const allGroups = await this.repository.find({
+			where: { courseId },
+			order: { order: 'ASC' }
+		});
+
+		// Separate default and non-default groups
+		const defaultGroups = allGroups.filter(group => group.isDefault);
+		const nonDefaultGroups = allGroups.filter(group => !group.isDefault);
+
+		// Validate that all provided groupIds exist and are non-default
+		const providedGroups = groupIds.map(id => {
+			const group = allGroups.find(g => g.id === id);
+			if (!group) {
+				throw new BadRequestException(`Group with ID ${id} not found`);
+			}
+			if (group.isDefault) {
+				throw new BadRequestException('Cannot reorder default groups');
+			}
+			return group;
+		});
+
+		// Ensure all non-default groups are included in the reorder
+		if (providedGroups.length !== nonDefaultGroups.length) {
+			throw new BadRequestException('Must provide all non-default group IDs for reordering');
+		}
+
+		// Update the order for non-default groups (starting from 1)
+		const updatePromises = groupIds.map((groupId, index) =>
+			this.repository.update(groupId, { order: index + 1 })
+		);
+
+		// Update default groups to always be at the end (order 999)
+		const defaultUpdatePromises = defaultGroups.map(group =>
+			this.repository.update(group.id, { order: 999 })
+		);
+
+		// Execute all updates
+		await Promise.all([...updatePromises, ...defaultUpdatePromises]);
+
+		// Return updated groups in new order
+		return this.repository.find({
+			where: { courseId },
+			order: { order: 'ASC' }
+		});
+	}
+
+	/**
+	 * Get group details with students
+	 */
+	async getGroupWithStudents(groupId: imports.UUID): Promise<any> {
+		const group = await this.repository.findOne({
+			where: { id: groupId },
+			relations: ['course', 'lab']
+		});
+
+		if (!group) {
+			throw new BadRequestException('Group not found');
+		}
+
+		// Get students in this group with proper seatNo fetching
+		const students = await this.userRepository
+			.createQueryBuilder('user')
+			.leftJoin('student_courses', 'sc', 'sc.student_id = user.id')
+			.leftJoin('students', 'student', 'student.id = user.id')
+			.select([
+				'user.id',
+				'user.name',
+				'user.username',
+				'student.seatNo as seatNo'
+			])
+			.where('sc.course_group_id = :groupId', { groupId })
+			.getRawMany();
+
+		// Get course and lab information
+		const course = await group.course;
+		const lab = group.labId ? await group.lab : null;
+
+		// Calculate effective capacity
+		const effectiveCapacity = await this.calculateLabCapacityForCourse(group.labId, group.courseId);
+
+		return {
+			id: group.id,
+			groupName: group.isDefault ? 'No Group' : `Group ${String.fromCharCode(64 + group.order)}`,
+			order: group.order,
+			capacity: effectiveCapacity,
+			actualCapacity: group.capacity,
+			isDefault: group.isDefault,
+			course: {
+				id: course.id,
+				name: course.name,
+				subjectCode: course.subjectCode,
+				courseNumber: course.courseNumber
+			},
+			lab: lab ? {
+				id: lab.id,
+				name: lab.name,
+				capacity: lab.capacity
+			} : null,
+			students: students.map(student => ({
+				id: student.user_id,
+				name: student.user_name,
+				username: student.user_username,
+				seatNo: student.seatNo || 'N/A'
+			})),
+			studentCount: students.length
+		};
+	}
+
+	/**
+	 * Get group details with schedule for editing
+	 */
+	async getGroupWithSchedule(groupId: imports.UUID): Promise<any> {
+		const group = await this.repository.findOne({
+			where: { id: groupId },
+			relations: ['course', 'lab']
+		});
+
+		if (!group) {
+			throw new BadRequestException('Group not found');
+		}
+
+		// Get schedules for this group
+		const schedules = await this.scheduleRepository.find({
+			where: { courseGroupId: groupId },
+			relations: ['assistant']
+		});
+
+		// Get course and lab information
+		const course = await group.course;
+		const lab = group.labId ? await group.lab : null;
+
+		return {
+			id: group.id,
+			name: group.isDefault ? 'No Group' : `Group ${String.fromCharCode(64 + group.order)}`,
+			order: group.order,
+			capacity: group.capacity,
+			isDefault: group.isDefault,
+			labId: group.labId,
+			labName: lab?.name,
+			course: {
+				id: course.id,
+				name: course.name
+			},
+			schedules: schedules.map(schedule => ({
+				weekDay: schedule.weekDay,
+				startTime: schedule.startTime,
+				endTime: schedule.endTime,
+				assistantId: schedule.assistantId,
+				assistantName: schedule.assistant ? schedule.assistant.then(a => a.name) : null
+			}))
+		};
+	}
+
+	/**
+	 * Move student between groups with capacity validation
+	 */
+	async moveStudentBetweenGroups(
+		studentId: imports.UUID,
+		fromGroupId: imports.UUID,
+		toGroupId: imports.UUID
+	): Promise<{ success: boolean; message: string; warnings?: string[] }> {
+		// Validate groups exist and belong to the same course
+		const fromGroup = await this.repository.findOneBy({ id: fromGroupId });
+		const toGroup = await this.repository.findOneBy({ id: toGroupId });
+
+		if (!fromGroup || !toGroup) {
+			throw new BadRequestException('One or both groups not found');
+		}
+
+		if (fromGroup.courseId !== toGroup.courseId) {
+			throw new BadRequestException('Cannot move student between groups of different courses');
+		}
+
+		// Check if student is in the from group
+		const studentCourse = await this.studentCoursesRepository.findOne({
+			where: {
+				studentId: studentId,
+				courseId: fromGroup.courseId,
+				courseGroupId: fromGroupId
+			}
+		});
+
+		if (!studentCourse) {
+			throw new BadRequestException('Student not found in the source group');
+		}
+
+		// Get current student count in target group
+		const targetGroupStudentCount = await this.studentCoursesRepository.count({
+			where: { courseGroupId: toGroupId }
+		});
+
+		// Calculate target group capacity
+		const targetGroupCapacity = await this.calculateLabCapacityForCourse(toGroup.labId, toGroup.courseId);
+
+		const warnings: string[] = [];
+
+		// Check capacity constraints
+		if (targetGroupStudentCount >= targetGroupCapacity && targetGroupCapacity > 0) {
+			warnings.push(`Target group is at or over capacity (${targetGroupStudentCount}/${targetGroupCapacity}). This may cause resource conflicts.`);
+		}
+
+		if (toGroup.isDefault) {
+			warnings.push('Moving student to default group. Default groups are not assigned to any lab and are meant as temporary holdings.');
+		}
+
+		// Perform the move
+		await this.studentCoursesRepository.update(
+			{ studentId, courseId: fromGroup.courseId },
+			{ courseGroupId: toGroupId }
+		);
+
+		return {
+			success: true,
+			message: `Student moved successfully from ${fromGroup.isDefault ? 'No Group' : `Group ${String.fromCharCode(64 + fromGroup.order)}`} to ${toGroup.isDefault ? 'No Group' : `Group ${String.fromCharCode(64 + toGroup.order)}`}`,
+			warnings: warnings.length > 0 ? warnings : undefined
+		};
+	}
+
+	/**
+	 * Get available groups for moving a student (all groups in the same course except current)
+	 */
+	async getAvailableGroupsForMove(studentId: imports.UUID, currentGroupId: imports.UUID): Promise<any[]> {
+		// Get the student's course from their current group
+		const currentGroup = await this.repository.findOne({
+			where: { id: currentGroupId },
+			relations: ['course']
+		});
+
+		if (!currentGroup) {
+			throw new BadRequestException('Current group not found');
+		}
+
+		const courseId = currentGroup.courseId;
+
+		// Get all groups in the same course except the current one
+		const availableGroups = await this.repository.find({
+			where: {
+				courseId: courseId,
+				id: Not(currentGroupId)
+			},
+			relations: ['lab']
+		});
+
+		// Calculate current enrollment and capacity for each group
+		const groupsWithCapacity = await Promise.all(
+			availableGroups.map(async (group) => {
+				const currentEnrollment = await this.studentCoursesRepository.count({
+					where: { courseGroupId: group.id }
+				});
+
+				const lab = await group.lab;
+
+				return {
+					id: group.id,
+					name: group.isDefault ? 'Default Group' : `Group ${String.fromCharCode(64 + group.order)}`,
+					labName: lab?.name || 'No Lab',
+					currentEnrollment,
+					capacity: group.capacity || 0,
+					hasSpace: currentEnrollment < (group.capacity || 0),
+					isDefault: group.isDefault
+				};
+			})
+		);
+
+		// Filter to only show groups with available space
+		return groupsWithCapacity.filter(group => group.hasSpace || group.isDefault);
 	}
 }

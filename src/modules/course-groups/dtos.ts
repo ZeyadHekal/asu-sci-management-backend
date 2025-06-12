@@ -219,3 +219,27 @@ export class CourseGroupPagedDto implements IPaginationOutput<CourseGroupListDto
 	@Expose()
 	total: number;
 }
+
+export class CourseGroupScheduleTablePagedDto implements IPaginationOutput<CourseGroupScheduleTableDto> {
+	@ApiProperty({ type: [CourseGroupScheduleTableDto] })
+	@Expose()
+	items: CourseGroupScheduleTableDto[];
+
+	@ApiProperty()
+	@Expose()
+	total: number;
+}
+
+export class LabCapacityDto {
+	@ApiProperty({ description: 'Number of available devices that meet course requirements' })
+	@Expose()
+	availableDevices: number;
+
+	@ApiProperty({ description: 'Total number of devices in the lab' })
+	@Expose()
+	totalDevices: number;
+
+	@ApiProperty({ description: 'List of software required by the course', type: [String] })
+	@Expose()
+	requiredSoftware: string[];
+}

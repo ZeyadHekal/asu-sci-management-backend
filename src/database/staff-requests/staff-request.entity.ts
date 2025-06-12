@@ -1,3 +1,4 @@
+
 import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { ManagementEntity } from 'src/base/base.entity';
 import { User } from '../users/user.entity';
@@ -18,7 +19,7 @@ export class StaffRequest extends ManagementEntity {
 
 	@Column()
 	@Expose()
-	email: string;
+	username: string;
 
 	@Column()
 	@Expose()

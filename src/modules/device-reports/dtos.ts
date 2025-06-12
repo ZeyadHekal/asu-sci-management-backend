@@ -6,10 +6,51 @@ import { IPaginationOutput } from 'src/base/interfaces/interface.pagination.outp
 import { PaginationInput } from 'src/base/pagination.input';
 
 export enum ReportStatus {
-    REPORTED = 'REPORTED',
+    PENDING_REVIEW = 'PENDING_REVIEW',
     IN_PROGRESS = 'IN_PROGRESS',
+    CONFIRMED = 'CONFIRMED',
     RESOLVED = 'RESOLVED',
+    REJECTED = 'REJECTED',
     CANCELLED = 'CANCELLED',
+}
+
+// DTO for maintenance history in reports
+export class ReportMaintenanceHistoryDto {
+    @ApiProperty({ description: 'Maintenance history ID' })
+    @Expose()
+    id: UUID;
+
+    @ApiProperty({ description: 'Maintenance type' })
+    @Expose()
+    maintenanceType: string;
+
+    @ApiProperty({ description: 'Maintenance status' })
+    @Expose()
+    status: string;
+
+    @ApiProperty({ description: 'Maintenance description' })
+    @Expose()
+    description: string;
+
+    @ApiProperty({ description: 'Resolution notes', required: false })
+    @Expose()
+    resolutionNotes?: string;
+
+    @ApiProperty({ description: 'Involved personnel', required: false })
+    @Expose()
+    involvedPersonnel?: string[];
+
+    @ApiProperty({ description: 'Completed at', required: false })
+    @Expose()
+    completedAt?: Date;
+
+    @ApiProperty({ description: 'Created at' })
+    @Expose()
+    created_at: Date;
+
+    @ApiProperty({ description: 'Updated at' })
+    @Expose()
+    updated_at: Date;
 }
 
 export class CreateDeviceReportDto {
@@ -18,10 +59,10 @@ export class CreateDeviceReportDto {
     @Expose()
     description: string;
 
-    @ApiProperty({ enum: ReportStatus, description: 'Report status', default: ReportStatus.REPORTED })
+    @ApiProperty({ enum: ReportStatus, description: 'Report status', default: ReportStatus.PENDING_REVIEW })
     @IsEnum(ReportStatus)
     @Expose()
-    status: ReportStatus = ReportStatus.REPORTED;
+    status: ReportStatus = ReportStatus.PENDING_REVIEW;
 
     @ApiProperty({ description: 'Fix message', required: false })
     @IsOptional()
@@ -34,10 +75,11 @@ export class CreateDeviceReportDto {
     @Expose()
     deviceId: UUID;
 
-    @ApiProperty({ description: 'Software/App ID' })
+    @ApiProperty({ description: 'Software/App ID', required: false })
+    @IsOptional()
     @IsUUID()
     @Expose()
-    appId: UUID;
+    appId?: UUID;
 
     @ApiProperty({ description: 'Reporter ID', required: false })
     @IsOptional()
@@ -72,12 +114,16 @@ export class DeviceReportDto extends CreateDeviceReportDto {
     @ApiProperty({ description: 'Reporter name', required: false })
     @Expose()
     reporterName?: string;
+
+    @ApiProperty({ description: 'Resolution updates/maintenance history', required: false, type: [ReportMaintenanceHistoryDto] })
+    @Expose()
+    resolutionUpdates?: ReportMaintenanceHistoryDto[];
 }
 
 export class DeviceReportListDto extends OmitType(DeviceReportDto, []) { }
 
 export class DeviceReportPagedDto implements IPaginationOutput<DeviceReportListDto> {
-    @ApiProperty({ type: [DeviceReportListDto] })
+    @ApiProperty({ type: DeviceReportListDto, isArray: true })
     @Expose()
     items: DeviceReportListDto[];
 
@@ -92,6 +138,12 @@ export class DeviceReportPaginationInput extends PaginationInput {
     @IsUUID()
     @Expose()
     deviceId?: UUID;
+
+    @ApiProperty({ required: false, description: 'Filter by lab ID' })
+    @IsOptional()
+    @IsUUID()
+    @Expose()
+    labId?: UUID;
 
     @ApiProperty({ required: false, description: 'Filter by reporter ID' })
     @IsOptional()
@@ -110,4 +162,22 @@ export class DeviceReportPaginationInput extends PaginationInput {
     @IsUUID()
     @Expose()
     appId?: UUID;
+
+    @ApiProperty({ required: false, description: 'Search across device names, descriptions, and reporter names' })
+    @IsOptional()
+    @IsString()
+    @Expose()
+    search?: string;
+
+    @ApiProperty({ required: false, description: 'Filter by date from (YYYY-MM-DD)' })
+    @IsOptional()
+    @IsString()
+    @Expose()
+    dateFrom?: string;
+
+    @ApiProperty({ required: false, description: 'Filter by date to (YYYY-MM-DD)' })
+    @IsOptional()
+    @IsString()
+    @Expose()
+    dateTo?: string;
 } 

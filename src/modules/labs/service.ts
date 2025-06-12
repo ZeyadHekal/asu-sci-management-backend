@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import * as imports from './imports';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Not } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { BaseService } from 'src/base/base.service';
 import { Device } from 'src/database/devices/device.entity';
@@ -22,21 +22,49 @@ export class LabService extends BaseService<imports.Entity, imports.CreateDto, i
 	}
 
 	async beforeCreateDto(dto: imports.CreateDto): Promise<imports.CreateDto> {
+		// Check supervisor exists
 		const supervisor = await this.userRepository.findOneBy({ id: dto.supervisorId });
 		if (!supervisor) {
 			throw new BadRequestException('Invalid supervisor id!');
 		}
+
+		// Check name uniqueness - Lab names must be unique across the system
+		const existingLab = await this.repository.findOne({ where: { name: dto.name } });
+		if (existingLab) {
+			throw new BadRequestException(`Lab with name '${dto.name}' already exists!`);
+		}
+
 		return dto;
 	}
 
 	async beforeUpdateDto(dto: imports.UpdateDto): Promise<imports.UpdateDto> {
+		// Check supervisor exists if provided
 		if (dto.supervisorId) {
 			const supervisor = await this.userRepository.findOneBy({ id: dto.supervisorId });
 			if (!supervisor) {
 				throw new BadRequestException('Invalid supervisor id!');
 			}
 		}
+
 		return dto;
+	}
+
+	async update(id: UUID, updateDto: imports.UpdateDto): Promise<imports.GetDto> {
+		// Check name uniqueness if name is being updated - Lab names must be unique across the system
+		if (updateDto.name) {
+			const existingLab = await this.repository.findOne({
+				where: {
+					name: updateDto.name,
+					id: Not(id) // Exclude current lab from uniqueness check
+				}
+			});
+			if (existingLab) {
+				throw new BadRequestException(`Lab with name '${updateDto.name}' already exists!`);
+			}
+		}
+
+		// Call parent update method
+		return super.update(id, updateDto);
 	}
 
 	private async getLabStatus(labId: UUID): Promise<string> {

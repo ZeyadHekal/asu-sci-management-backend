@@ -6,19 +6,35 @@ import { EventController } from './controller';
 import { Event } from 'src/database/events/event.entity';
 import { EventSchedule, StudentEventSchedule } from 'src/database/events/event_schedules.entity';
 import { ExamGroup } from 'src/database/events/exam-groups.entity';
+import { ExamModel, ExamModelFile } from 'src/database/events/exam-models.entity';
 import { Course } from 'src/database/courses/course.entity';
 import { CourseGroup } from 'src/database/courses/course-group.entity';
 import { Lab } from 'src/database/labs/lab.entity';
 import { User } from 'src/database/users/user.entity';
+import { Device } from 'src/database/devices/device.entity';
 import { WebsocketModule } from 'src/websockets/websocket.module';
 import { FileModule } from '../files/module';
+import { CourseGroupModule } from '../course-groups/module';
 
 @Module({
 	imports: [
-		TypeOrmModule.forFeature([Event, EventSchedule, StudentEventSchedule, ExamGroup, Course, CourseGroup, Lab, User]),
+		TypeOrmModule.forFeature([
+			Event,
+			EventSchedule,
+			StudentEventSchedule,
+			ExamGroup,
+			ExamModel,
+			ExamModelFile,
+			Course,
+			CourseGroup,
+			Lab,
+			User,
+			Device
+		]),
 		ScheduleModule.forRoot(),
 		WebsocketModule,
 		FileModule,
+		CourseGroupModule,
 	],
 	controllers: [EventController],
 	providers: [EventService],

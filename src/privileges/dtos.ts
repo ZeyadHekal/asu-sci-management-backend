@@ -2,7 +2,7 @@ import { UUID } from 'crypto';
 import { PrivilegeCode } from '../db-seeder/data/privileges';
 import { EntityName } from './entity-map';
 import { ApiProperty, ApiPropertyOptional, OmitType } from '@nestjs/swagger';
-import { IsArray, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { Expose, Type } from 'class-transformer';
 
 export class PrivilegeDto {
@@ -18,12 +18,27 @@ export class PrivilegeDto {
 	@ApiProperty()
 	@Expose()
 	requiresResource: boolean;
-	@ApiProperty()
+	@ApiPropertyOptional()
 	@Expose()
 	paramKey?: string;
-	@ApiProperty()
+	@ApiPropertyOptional()
 	@Expose()
 	entityName?: EntityName;
+	@ApiProperty()
+	@Expose()
+	name: string;
+	@ApiProperty()
+	@Expose()
+	key: string;
+	@ApiProperty()
+	@Expose()
+	description: string;
+	@ApiProperty()
+	@Expose()
+	category: string;
+	@ApiProperty({ default: true })
+	@Expose()
+	isActive: boolean;
 }
 export class PrivilegeAssignmentDto extends PrivilegeDto {
 	@ApiPropertyOptional({ isArray: true, type: 'string' })

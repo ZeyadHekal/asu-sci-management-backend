@@ -78,9 +78,17 @@ export enum WSEventType {
 	EXAM_MODE_START = 'exam:mode_start',
 	EXAM_START = 'exam:start',
 	EXAM_END = 'exam:end',
+	EXAM_STARTING_SOON = 'exam:starting_soon',
 	EXAM_ACCESS_GRANTED = 'exam:access_granted',
 	EXAM_ACCESS_REVOKED = 'exam:access_revoked',
 	EXAM_MODE_STATUS_CHANGE = 'exam:mode_status_change',
+	DEVICE_REPORT_CREATED = 'device_report:created',
+	DEVICE_REPORT_UPDATED = 'device_report:updated',
+	DEVICE_REPORT_STATUS_CHANGED = 'device_report:status_changed',
+	DEVICE_REPORT_ASSIGNED = 'device_report:assigned',
+	MAINTENANCE_HISTORY_CREATED = 'maintenance_history:created',
+	MAINTENANCE_HISTORY_UPDATED = 'maintenance_history:updated',
+	DEVICE_REPORT_COUNTER_UPDATE = 'device_report:counter_update',
 }
 
 /**
@@ -107,4 +115,80 @@ export function parseChannelName(channelName: string): { type: ChannelType; id: 
 	}
 
 	return { type, id: id as UUID };
+}
+
+/**
+ * Device Report WebSocket event data structures
+ */
+export interface DeviceReportCreatedData {
+	reportId: UUID;
+	deviceId: UUID;
+	deviceName?: string;
+	reporterId?: UUID;
+	reporterName?: string;
+	description: string;
+	status: string;
+}
+
+export interface DeviceReportUpdatedData {
+	reportId: UUID;
+	deviceId: UUID;
+	deviceName?: string;
+	oldStatus?: string;
+	newStatus?: string;
+	updatedBy?: UUID;
+	updatedByName?: string;
+	description?: string;
+}
+
+export interface DeviceReportStatusChangedData {
+	reportId: UUID;
+	oldStatus: string;
+	newStatus: string;
+	deviceId: UUID;
+	deviceName?: string;
+	updatedBy?: UUID;
+	updatedByName?: string;
+	fixMessage?: string;
+}
+
+export interface DeviceReportAssignedData {
+	reportId: UUID;
+	deviceId: UUID;
+	deviceName?: string;
+	assignedTo?: UUID;
+	assignedToName?: string;
+	assignedBy?: UUID;
+	assignedByName?: string;
+}
+
+export interface MaintenanceHistoryCreatedData {
+	maintenanceId: UUID;
+	reportId?: UUID;
+	deviceId: UUID;
+	deviceName?: string;
+	createdBy?: UUID;
+	createdByName?: string;
+	maintenanceType: string;
+	status: string;
+}
+
+export interface MaintenanceHistoryUpdatedData {
+	maintenanceId: UUID;
+	reportId?: UUID;
+	deviceId: UUID;
+	deviceName?: string;
+	updatedBy?: UUID;
+	updatedByName?: string;
+	maintenanceType: string;
+	status: string;
+}
+
+export interface DeviceReportCounterUpdateData {
+	deviceId: UUID;
+	deviceName?: string;
+	totalReports: number;
+	pendingReports: number;
+	inProgressReports: number;
+	resolvedReports: number;
 }

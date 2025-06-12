@@ -178,11 +178,11 @@ export class UserController extends BaseController<Entity, CreateDto, UpdateDto,
 	@Patch('staff/:id')
 	@ApiOperation({
 		summary: 'Update staff',
-		description: 'Update an existing staff member by ID. Username cannot be changed. Email and userType can be updated.',
+		description: 'Update an existing staff member by ID. Username can be updated but must be unique. UserType can also be updated.',
 	})
 	@ApiParam({ name: 'id', description: 'Staff ID', type: 'string' })
 	@ApiResponse({ type: StaffDto, status: 200, description: 'Staff updated successfully' })
-	@ApiResponse({ status: 400, description: 'Bad Request - Invalid data or email already in use' })
+	@ApiResponse({ status: 400, description: 'Bad Request - Invalid data or username already in use' })
 	@ApiResponse({ status: 401, description: 'Unauthorized' })
 	@ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
 	@ApiResponse({ status: 404, description: 'Not Found - Staff does not exist' })
@@ -216,5 +216,15 @@ export class UserController extends BaseController<Entity, CreateDto, UpdateDto,
 	@ApiResponse({ status: 404, description: 'Not Found - User does not exist' })
 	updateUserPrivileges(@Param('id') id: UUID, @Body() updateDto: UpdateUserPrivilegesDto): Promise<StaffDto> {
 		return this.service.updateUserPrivileges(id, updateDto);
+	}
+
+	@Get('assistants')
+	@RequirePrivileges({ and: [PrivilegeCode.MANAGE_LABS] })
+	@ApiOperation({ summary: 'Get all lab assistants', description: 'Retrieve all users with LAB_ASSISTANT privilege' })
+	@ApiResponse({ type: StaffDto, isArray: true, status: 200, description: 'Lab assistants retrieved successfully' })
+	@ApiResponse({ status: 401, description: 'Unauthorized' })
+	@ApiResponse({ status: 403, description: 'Forbidden - Insufficient privileges' })
+	getAllAssistants(): Promise<StaffDto[]> {
+		return this.service.getAllAssistants();
 	}
 }

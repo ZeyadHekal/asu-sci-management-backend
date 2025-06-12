@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Server } from 'socket.io';
 import { UUID } from 'crypto';
 import { ChannelType, PrivilegeChangeData, WSEventType, getChannelName, ExamModeStatusChangeData } from './websocket.interfaces';
+import { ExamModeStatusDto } from '../modules/events/dtos';
 
 @Injectable()
 export class WebsocketService {
@@ -134,7 +135,7 @@ export class WebsocketService {
 	 * @param userId The student user ID
 	 * @param examModeStatus The exam mode status data
 	 */
-	notifyExamModeStatusChange(userId: UUID, examModeStatus: Omit<ExamModeStatusChangeData, 'timestamp'>) {
+	notifyExamModeStatusChange(userId: UUID, examModeStatus: ExamModeStatusDto) {
 		const data: ExamModeStatusChangeData = {
 			...examModeStatus,
 			timestamp: new Date().toISOString(),

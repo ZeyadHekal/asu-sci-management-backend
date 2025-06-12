@@ -52,6 +52,27 @@ export class PrivilegeSeeder {
 					dbPrivilege.entityName = seedPriv.entityName;
 					updated = true;
 				}
+				// Update new fields
+				if (dbPrivilege.name !== seedPriv.name) {
+					dbPrivilege.name = seedPriv.name;
+					updated = true;
+				}
+				if (dbPrivilege.key !== seedPriv.key) {
+					dbPrivilege.key = seedPriv.key;
+					updated = true;
+				}
+				if (dbPrivilege.description !== seedPriv.description) {
+					dbPrivilege.description = seedPriv.description;
+					updated = true;
+				}
+				if (dbPrivilege.category !== seedPriv.category) {
+					dbPrivilege.category = seedPriv.category;
+					updated = true;
+				}
+				if (dbPrivilege.isActive !== seedPriv.isActive) {
+					dbPrivilege.isActive = seedPriv.isActive;
+					updated = true;
+				}
 
 				if (updated) {
 					await this.repo.save(dbPrivilege);

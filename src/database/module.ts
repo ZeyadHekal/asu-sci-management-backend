@@ -24,6 +24,8 @@ import { Device } from './devices/device.entity';
 import { DeviceSoftware } from './devices/devices_softwares.entity';
 import { DeviceMaintenanceHistory } from './devices/device-maintenance-history.entity';
 import { DeviceLoginHistory } from './devices/device-login-history.entity';
+import { StaffRequest } from './staff-requests/staff-request.entity';
+import { CourseAccessPermission } from './courses/course-access.entity';
 
 @Global()
 @Module({
@@ -68,6 +70,8 @@ import { DeviceLoginHistory } from './devices/device-login-history.entity';
 			DeviceSoftware,
 			DeviceMaintenanceHistory,
 			DeviceLoginHistory,
+			StaffRequest,
+			CourseAccessPermission,
 		]),
 	],
 	exports: [TypeOrmModule],
