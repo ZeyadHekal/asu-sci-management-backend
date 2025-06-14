@@ -137,7 +137,7 @@ export class CourseGroupService extends BaseService<imports.Entity, imports.Crea
 					.select('COUNT(DISTINCT ds.softwareId)')
 					.from(DeviceSoftware, 'ds')
 					.where('ds.deviceId = device.id')
-					.andWhere('ds.status = :softwareStatus', { softwareStatus: 'available' })
+					.andWhere('ds.hasIssue = false')
 					.andWhere('ds.softwareId IN (:...softwareIds)', { softwareIds: courseSoftwareIds })
 					.getQuery();
 				return `(${subQuery}) = :requiredCount`;
@@ -537,7 +537,7 @@ export class CourseGroupService extends BaseService<imports.Entity, imports.Crea
 					.select('COUNT(DISTINCT ds.softwareId)')
 					.from(DeviceSoftware, 'ds')
 					.where('ds.deviceId = device.id')
-					.andWhere('ds.status = :softwareStatus', { softwareStatus: 'available' })
+					.andWhere('ds.hasIssue = false')
 					.andWhere('ds.softwareId IN (:...softwareIds)', { softwareIds: courseSoftwareIds })
 					.getQuery();
 				return `(${subQuery}) = :requiredCount`;
